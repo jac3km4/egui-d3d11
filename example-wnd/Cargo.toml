@@ -1,0 +1,30 @@
+[package]
+name = "example-wnd"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+egui = "0.16.1"
+libc = "0.2.112"
+
+[dependencies.egui-d3d11]
+path = "../egui-d3d11"
+
+[dependencies.sunshine]
+path = "../../sunshine"
+
+[dependencies.radon]
+path = "../../radon"
+
+[dependencies.windows]
+version = "0.30.0"
+features = [
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_Graphics_Dxgi_Common",
+    "Win32_Graphics_Direct3D11",
+    "Win32_Graphics_Dxgi",
+    "Win32_Foundation"
+]

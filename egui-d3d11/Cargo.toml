@@ -1,0 +1,21 @@
+[package]
+name = "egui-d3d11"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+parking_lot = "0.11.2"
+thiserror = "1.0.0"
+egui = "0.16.1"
+
+[dependencies.windows]
+version = "0.30.0"
+features = [
+    "Win32_System_WindowsProgramming",
+    "Win32_Graphics_Direct3D_Fxc",
+    "Win32_Graphics_Dxgi_Common",
+    "Win32_Graphics_Direct3D11",
+    "Win32_Graphics_Dxgi",
+    "Win32_Graphics_Hlsl",
+    "Win32_Foundation"
+]
