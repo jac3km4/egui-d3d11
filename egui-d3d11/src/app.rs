@@ -1,16 +1,20 @@
-use std::ptr::null_mut as null;
 use egui::CtxRef;
 use parking_lot::Mutex;
+use std::ptr::null_mut as null;
 use windows::{
     core::HRESULT,
     Win32::{
         Foundation::{HWND, LPARAM, WPARAM},
         Graphics::{
-            Direct3D11::{ID3D11Device, ID3D11DeviceContext, ID3D11Texture2D, ID3D11RenderTargetView},
+            Direct3D11::{
+                ID3D11Device, ID3D11DeviceContext, ID3D11RenderTargetView, ID3D11Texture2D,
+            },
             Dxgi::{Common::DXGI_FORMAT, IDXGISwapChain},
         },
     },
 };
+
+use crate::shader::CompiledShaders;
 
 type FnResizeBuffers =
     unsafe extern "stdcall" fn(IDXGISwapChain, u32, u32, u32, DXGI_FORMAT, u32) -> HRESULT;
@@ -18,6 +22,7 @@ type FnResizeBuffers =
 #[allow(unused)]
 pub struct DirectX11App {
     render_view: Mutex<ID3D11RenderTargetView>,
+    shaders: CompiledShaders,
     ui: fn(&CtxRef),
     ctx: CtxRef,
     hwnd: HWND,
@@ -26,18 +31,24 @@ pub struct DirectX11App {
 impl DirectX11App {
     pub fn new(ui: fn(&CtxRef), swap_chain: &IDXGISwapChain, device: &ID3D11Device) -> Self {
         unsafe {
-            let hwnd = swap_chain.GetDesc().expect("Failed to get swapchain's descriptor.").OutputWindow;
+            let hwnd = swap_chain
+                .GetDesc()
+                .expect("Failed to get swapchain's descriptor.")
+                .OutputWindow;
             if hwnd.is_invalid() {
                 panic!("Invalid output window descriptor.");
             }
 
-            let back_buffer: ID3D11Texture2D = swap_chain.GetBuffer(0)
+            let back_buffer: ID3D11Texture2D = swap_chain
+                .GetBuffer(0)
                 .expect("Failed to get swapchain's back buffer");
-            let render_view = device.CreateRenderTargetView(&back_buffer, null())
+            let render_view = device
+                .CreateRenderTargetView(&back_buffer, null())
                 .expect("Failed to create render target view.");
-            
+
             Self {
                 render_view: Mutex::new(render_view),
+                shaders: CompiledShaders::new(device),
                 ctx: CtxRef::default(),
                 hwnd,
                 ui,
@@ -45,7 +56,7 @@ impl DirectX11App {
         }
     }
 
-    pub fn present(&self, _swap_chain: &IDXGISwapChain, _sync_flags: u32, _interval: u32) { }
+    pub fn present(&self, _swap_chain: &IDXGISwapChain, _sync_flags: u32, _interval: u32) {}
 
     #[allow(clippy::too_many_arguments)]
     pub fn resize_buffers(
@@ -72,12 +83,16 @@ impl DirectX11App {
                 new_format,
                 swap_chain_flags,
             );
-            
-            let backbuffer: ID3D11Texture2D = swap_chain.GetBuffer(0)
+
+            let backbuffer: ID3D11Texture2D = swap_chain
+                .GetBuffer(0)
                 .expect("Failed to get swapchain's backbuffer.");
 
-            let device: ID3D11Device = swap_chain.GetDevice().expect("Failed to get swapchain's device.");
-            let new_view = device.CreateRenderTargetView(&backbuffer, null())
+            let device: ID3D11Device = swap_chain
+                .GetDevice()
+                .expect("Failed to get swapchain's device.");
+            let new_view = device
+                .CreateRenderTargetView(&backbuffer, null())
                 .expect("Failed to create render target view.");
             *view_lock = new_view;
 
@@ -93,6 +108,8 @@ impl DirectX11App {
 #[inline]
 fn _get_device_context(device: &ID3D11Device) -> ID3D11DeviceContext {
     let mut context = None;
-    unsafe { device.GetImmediateContext(&mut context); }
+    unsafe {
+        device.GetImmediateContext(&mut context);
+    }
     context.expect("Failed to get device's immediate context.")
 }

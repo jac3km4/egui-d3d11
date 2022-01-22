@@ -163,7 +163,7 @@ unsafe fn main_thread(_hinst: usize) {
         &mut O_RESIZE_BUFFERS,
     )
     .unwrap();
-    
+
     #[allow(clippy::empty_loop)]
     loop {}
 }
