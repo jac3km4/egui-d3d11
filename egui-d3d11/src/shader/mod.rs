@@ -20,8 +20,8 @@ trait Shader {
 }
 
 impl Shader for ID3D11VertexShader {
-    const ENTRY_POINT: PSTR = PSTR("vs_main\x00".as_ptr() as _);
-    const TARGET: PSTR = PSTR("vs_5_0\x00".as_ptr() as _);
+    const ENTRY_POINT: PSTR = c_str!("vs_main");
+    const TARGET: PSTR = c_str!("vs_5_0");
 
     unsafe fn create(device: &ID3D11Device, blob: &Option<ID3DBlob>) -> Self {
         expect!(
@@ -36,8 +36,8 @@ impl Shader for ID3D11VertexShader {
 }
 
 impl Shader for ID3D11PixelShader {
-    const ENTRY_POINT: PSTR = PSTR("ps_main\x00".as_ptr() as _);
-    const TARGET: PSTR = PSTR("ps_5_0\x00".as_ptr() as _);
+    const ENTRY_POINT: PSTR = c_str!("ps_main");
+    const TARGET: PSTR = c_str!("ps_5_0");
 
     unsafe fn create(device: &ID3D11Device, blob: &Option<ID3DBlob>) -> Self {
         expect!(
