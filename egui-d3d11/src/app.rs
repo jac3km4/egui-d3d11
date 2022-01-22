@@ -31,7 +31,7 @@ use windows::{
     },
 };
 
-use crate::{mesh::MeshBuffers, shader::CompiledShaders};
+use crate::{backup::BackupState, mesh::MeshBuffers, shader::CompiledShaders};
 
 type FnResizeBuffers =
     unsafe extern "stdcall" fn(IDXGISwapChain, u32, u32, u32, DXGI_FORMAT, u32) -> HRESULT;
@@ -41,8 +41,9 @@ pub struct DirectX11App {
     render_view: Mutex<ID3D11RenderTargetView>,
     input_layout: ID3D11InputLayout,
     shaders: CompiledShaders,
-    ui: fn(&CtxRef),
+    backup: BackupState,
     ctx: Mutex<CtxRef>,
+    ui: fn(&CtxRef),
     hwnd: HWND,
 }
 
@@ -192,6 +193,8 @@ impl DirectX11App {
         device: &ID3D11Device,
         context: &ID3D11DeviceContext,
     ) {
+        self.backup.save(context);
+
         self.normalize_meshes(&mut meshes);
         self.set_viewports(context);
         self.set_blend_state(device, context);
@@ -221,6 +224,8 @@ impl DirectX11App {
                 context.DrawIndexed(mesh.1.indices.len() as _, 0, 0);
             }
         }
+
+        self.backup.restore(context);
     }
 }
 
@@ -257,6 +262,7 @@ impl DirectX11App {
             Self {
                 render_view: Mutex::new(render_view),
                 ctx: Mutex::new(CtxRef::default()),
+                backup: BackupState::default(),
                 input_layout,
                 shaders,
                 hwnd,

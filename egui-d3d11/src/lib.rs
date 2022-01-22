@@ -19,5 +19,6 @@ macro_rules! c_str {
 mod app;
 pub use app::*;
 
+mod backup;
 mod mesh;
 mod shader;
