@@ -106,7 +106,7 @@ fn ui(ctx: &CtxRef) {
             max: Pos2::new(150.0, 150.0),
         },
         10.0,
-        Color32::from_rgba_premultiplied(255, 0, 0, 255),
+        Color32::from_rgba_premultiplied(255, 0, 0, 100),
         Stroke::none(),
     );
 }

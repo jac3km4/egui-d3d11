@@ -1,6 +1,10 @@
 use egui::{epaint::Vertex, ClippedMesh, CtxRef, Modifiers, Pos2, RawInput, Rect};
 use parking_lot::Mutex;
-use std::{intrinsics::transmute, mem::size_of, ptr::null_mut as null};
+use std::{
+    intrinsics::transmute,
+    mem::{size_of, zeroed},
+    ptr::null_mut as null,
+};
 use windows::{
     core::HRESULT,
     Win32::{
@@ -9,8 +13,10 @@ use windows::{
             Direct3D::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
             Direct3D11::{
                 ID3D11Device, ID3D11DeviceContext, ID3D11InputLayout, ID3D11RenderTargetView,
-                ID3D11Texture2D, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_ELEMENT_DESC,
-                D3D11_INPUT_PER_VERTEX_DATA, D3D11_VIEWPORT,
+                ID3D11Texture2D, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_BLEND_DESC,
+                D3D11_BLEND_INV_SRC_ALPHA, D3D11_BLEND_ONE, D3D11_BLEND_OP_ADD,
+                D3D11_BLEND_SRC_ALPHA, D3D11_COLOR_WRITE_ENABLE_ALL, D3D11_INPUT_ELEMENT_DESC,
+                D3D11_INPUT_PER_VERTEX_DATA, D3D11_RENDER_TARGET_BLEND_DESC, D3D11_VIEWPORT,
             },
             Dxgi::{
                 Common::{
@@ -138,6 +144,32 @@ impl DirectX11App {
             })
     }
 
+    fn set_blend_state(&self, device: &ID3D11Device, context: &ID3D11DeviceContext) {
+        unsafe {
+            let mut targets: [D3D11_RENDER_TARGET_BLEND_DESC; 8] = zeroed();
+            targets[0].BlendEnable = true.into();
+            targets[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+            targets[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+            targets[0].BlendOp = D3D11_BLEND_OP_ADD;
+            targets[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+            targets[0].DestBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA;
+            targets[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+            targets[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL as _;
+
+            let blend_desc = D3D11_BLEND_DESC {
+                AlphaToCoverageEnable: false.into(),
+                IndependentBlendEnable: false.into(),
+                RenderTarget: targets,
+            };
+
+            let state = expect!(
+                device.CreateBlendState(&blend_desc),
+                "Failed to create blend state."
+            );
+            context.OMSetBlendState(&state, [0., 0., 0., 0.].as_ptr(), 0xffffffff);
+        }
+    }
+
     fn set_viewports(&self, context: &ID3D11DeviceContext) {
         let size = self.get_screen_size();
         let viewport = D3D11_VIEWPORT {
@@ -162,6 +194,7 @@ impl DirectX11App {
     ) {
         self.normalize_meshes(&mut meshes);
         self.set_viewports(context);
+        self.set_blend_state(device, context);
 
         let view_lock = &mut *self.render_view.lock();
 
