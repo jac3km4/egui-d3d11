@@ -56,7 +56,7 @@ unsafe extern "stdcall" fn hk_present(
         OLD_WND_PROC = Some(transmute(SetWindowLongPtrA(
             hwnd,
             GWLP_WNDPROC,
-            hk_wnd_proc as _,
+            hk_wnd_proc as usize as _,
         )));
     }
 
@@ -163,6 +163,7 @@ unsafe fn main_thread(_hinst: usize) {
         &mut O_RESIZE_BUFFERS,
     )
     .unwrap();
-
+    
+    #[allow(clippy::empty_loop)]
     loop {}
 }
