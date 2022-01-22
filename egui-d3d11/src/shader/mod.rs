@@ -24,13 +24,14 @@ impl Shader for ID3D11VertexShader {
     const TARGET: PSTR = PSTR("vs_5_0\x00".as_ptr() as _);
 
     unsafe fn create(device: &ID3D11Device, blob: &Option<ID3DBlob>) -> Self {
-        device
-            .CreateVertexShader(
+        expect!(
+            device.CreateVertexShader(
                 blob.as_ref().unwrap().GetBufferPointer(),
                 blob.as_ref().unwrap().GetBufferSize(),
                 None,
-            )
-            .expect("Failed to create vertex shader.")
+            ),
+            "Failed to create vertex shader."
+        )
     }
 }
 
@@ -39,13 +40,14 @@ impl Shader for ID3D11PixelShader {
     const TARGET: PSTR = PSTR("ps_5_0\x00".as_ptr() as _);
 
     unsafe fn create(device: &ID3D11Device, blob: &Option<ID3DBlob>) -> Self {
-        device
-            .CreatePixelShader(
+        expect!(
+            device.CreatePixelShader(
                 blob.as_ref().unwrap().GetBufferPointer(),
                 blob.as_ref().unwrap().GetBufferSize(),
                 None,
-            )
-            .expect("Failed to create pixel shader.")
+            ),
+            "Failed to create pixel shader."
+        )
     }
 }
 
