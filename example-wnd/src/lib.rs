@@ -100,13 +100,24 @@ unsafe extern "stdcall" fn hk_wnd_proc(
 }
 
 fn ui(ctx: &CtxRef) {
+    ctx.memory().options.tessellation_options.anti_alias = false;
+
+    egui::containers::Window::new("").show(ctx, |ui| {});
+
     ctx.debug_painter().rect(
         Rect {
-            min: Pos2::new(10.0, 10.0),
+            min: Pos2::new(100.0, 100.0),
             max: Pos2::new(150.0, 150.0),
         },
         10.0,
-        Color32::from_rgba_premultiplied(255, 0, 0, 100),
+        Color32::from_rgba_premultiplied(255, 0, 0, 150),
+        Stroke::none(),
+    );
+    
+    ctx.debug_painter().circle(
+        Pos2::new(150.0, 150.0),
+        35.0,
+        Color32::from_rgba_premultiplied(0, 255, 0, 200),
         Stroke::none(),
     );
 }

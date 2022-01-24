@@ -12,11 +12,12 @@ use windows::{
         Graphics::{
             Direct3D::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
             Direct3D11::{
-                ID3D11Device, ID3D11DeviceContext, ID3D11InputLayout, ID3D11RenderTargetView,
-                ID3D11Texture2D, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_BLEND_DESC,
-                D3D11_BLEND_INV_SRC_ALPHA, D3D11_BLEND_ONE, D3D11_BLEND_OP_ADD,
-                D3D11_BLEND_SRC_ALPHA, D3D11_COLOR_WRITE_ENABLE_ALL, D3D11_INPUT_ELEMENT_DESC,
-                D3D11_INPUT_PER_VERTEX_DATA, D3D11_RENDER_TARGET_BLEND_DESC, D3D11_VIEWPORT,
+                ID3D11Device, ID3D11DeviceContext, ID3D11InputLayout,
+                ID3D11RenderTargetView, ID3D11Texture2D, D3D11_APPEND_ALIGNED_ELEMENT,
+                D3D11_BLEND_DESC, D3D11_BLEND_INV_SRC_ALPHA, D3D11_BLEND_ONE, D3D11_BLEND_OP_ADD,
+                D3D11_BLEND_SRC_ALPHA, D3D11_COLOR_WRITE_ENABLE_ALL, D3D11_CULL_NONE,
+                D3D11_FILL_SOLID, D3D11_INPUT_ELEMENT_DESC, D3D11_INPUT_PER_VERTEX_DATA,
+                D3D11_RASTERIZER_DESC, D3D11_RENDER_TARGET_BLEND_DESC, D3D11_VIEWPORT,
             },
             Dxgi::{
                 Common::{
@@ -187,6 +188,30 @@ impl DirectX11App {
         }
     }
 
+    fn set_raster_state(&self, device: &ID3D11Device, context: &ID3D11DeviceContext) {
+        let raster_desc = D3D11_RASTERIZER_DESC {
+            FillMode: D3D11_FILL_SOLID,
+            CullMode: D3D11_CULL_NONE,
+            FrontCounterClockwise: false.into(),
+            DepthBias: false.into(),
+            DepthBiasClamp: 0.,
+            SlopeScaledDepthBias: 0.,
+            DepthClipEnable: false.into(),
+            ScissorEnable: false.into(),
+            MultisampleEnable: false.into(),
+            AntialiasedLineEnable: false.into(),
+        };
+
+        unsafe {
+            let raster_state = expect!(
+                device.CreateRasterizerState(&raster_desc),
+                "Failed to create rasterizer descriptor"
+            );
+
+            context.RSSetState(&raster_state);
+        }
+    }
+
     fn render_meshes(
         &self,
         mut meshes: Vec<ClippedMesh>,
@@ -198,10 +223,14 @@ impl DirectX11App {
         self.normalize_meshes(&mut meshes);
         self.set_viewports(context);
         self.set_blend_state(device, context);
+        self.set_raster_state(device, context);
 
         let view_lock = &mut *self.render_view.lock();
 
+        
         unsafe {
+            context.ClearRenderTargetView(view_lock.clone(), [1., 0., 0., 0.3].as_ptr());
+
             context.OMSetRenderTargets(1, transmute(view_lock), None);
             context.IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
             context.IASetInputLayout(&self.input_layout);
