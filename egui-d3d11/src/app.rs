@@ -12,9 +12,9 @@ use windows::{
         Graphics::{
             Direct3D::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
             Direct3D11::{
-                ID3D11Device, ID3D11DeviceContext, ID3D11InputLayout,
-                ID3D11RenderTargetView, ID3D11Texture2D, D3D11_APPEND_ALIGNED_ELEMENT,
-                D3D11_BLEND_DESC, D3D11_BLEND_INV_SRC_ALPHA, D3D11_BLEND_ONE, D3D11_BLEND_OP_ADD,
+                ID3D11Device, ID3D11DeviceContext, ID3D11InputLayout, ID3D11RenderTargetView,
+                ID3D11Texture2D, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_BLEND_DESC,
+                D3D11_BLEND_INV_SRC_ALPHA, D3D11_BLEND_ONE, D3D11_BLEND_OP_ADD,
                 D3D11_BLEND_SRC_ALPHA, D3D11_COLOR_WRITE_ENABLE_ALL, D3D11_CULL_NONE,
                 D3D11_FILL_SOLID, D3D11_INPUT_ELEMENT_DESC, D3D11_INPUT_PER_VERTEX_DATA,
                 D3D11_RASTERIZER_DESC, D3D11_RENDER_TARGET_BLEND_DESC, D3D11_VIEWPORT,
@@ -227,7 +227,6 @@ impl DirectX11App {
 
         let view_lock = &mut *self.render_view.lock();
 
-        
         unsafe {
             context.ClearRenderTargetView(view_lock.clone(), [1., 0., 0., 0.3].as_ptr());
 

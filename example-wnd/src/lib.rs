@@ -113,7 +113,7 @@ fn ui(ctx: &CtxRef) {
         Color32::from_rgba_premultiplied(255, 0, 0, 150),
         Stroke::none(),
     );
-    
+
     ctx.debug_painter().circle(
         Pos2::new(150.0, 150.0),
         35.0,

@@ -1,6 +1,5 @@
-use std::mem::size_of;
-
 use egui::{epaint::Vertex, ClippedMesh};
+use std::mem::size_of;
 use windows::Win32::Graphics::Direct3D11::{
     ID3D11Buffer, ID3D11Device, D3D11_BIND_INDEX_BUFFER, D3D11_BIND_VERTEX_BUFFER,
     D3D11_BUFFER_DESC, D3D11_SUBRESOURCE_DATA, D3D11_USAGE_DEFAULT,
