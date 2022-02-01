@@ -221,7 +221,7 @@ impl DirectX11App {
             DepthBiasClamp: 0.,
             SlopeScaledDepthBias: 0.,
             DepthClipEnable: false.into(),
-            ScissorEnable: true.into(),
+            ScissorEnable: false.into(),
             MultisampleEnable: false.into(),
             AntialiasedLineEnable: false.into(),
         };
@@ -236,18 +236,6 @@ impl DirectX11App {
         }
     }
 
-    fn create_scissor_rects(meshes: &[GpuMesh]) -> Vec<RECT> {
-        meshes
-            .iter()
-            .map(|m| RECT {
-                left: m.rect.left() as _,
-                top: m.rect.top() as _,
-                right: m.rect.right() as _,
-                bottom: m.rect.bottom() as _,
-            })
-            .collect()
-    }
-
     fn render_meshes(
         &self,
         mut meshes: Vec<GpuMesh>,
@@ -255,9 +243,6 @@ impl DirectX11App {
         ctx: &ID3D11DeviceContext,
     ) {
         self.backup.save(ctx);
-
-        // Rects must be created before normalizing.
-        let scissor_rects = Self::create_scissor_rects(&meshes);
 
         self.normalize_meshes(&mut meshes);
         self.set_viewports(ctx);
@@ -284,8 +269,6 @@ impl DirectX11App {
                     &0,
                 );
                 ctx.IASetIndexBuffer(&buffers.index, DXGI_FORMAT_R32_UINT, 0);
-                // This doesn't seem to affect anything even if rects are clearly cutting some parts out.
-                ctx.RSSetScissorRects(meshes.len() as u32, scissor_rects.as_ptr());
 
                 ctx.VSSetShader(&self.shaders.vertex, null(), 0);
                 ctx.PSSetShader(&self.shaders.pixel, null(), 0);

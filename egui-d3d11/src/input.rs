@@ -1,9 +1,9 @@
-use egui::{Event, Modifiers, Pos2, RawInput, Rect};
+use egui::{Event, Modifiers, Pos2, RawInput, Rect, PointerButton};
 use parking_lot::Mutex;
 use windows::Win32::{
     Foundation::{HWND, RECT},
     System::WindowsProgramming::NtQuerySystemTime,
-    UI::WindowsAndMessaging::{GetClientRect, WM_MOUSEMOVE},
+    UI::WindowsAndMessaging::{GetClientRect, WM_MOUSEMOVE, WM_LBUTTONDOWN, WM_LBUTTONUP},
 };
 
 pub struct InputCollector {
@@ -23,13 +23,22 @@ impl InputCollector {
         let screen = self.get_screen_size();
 
         match umsg {
-            WM_MOUSEMOVE => {
-                let mut x = (lparam & 0xFFFF) as f32;
-                if x > screen.x { x = 0.; }
-                
-                let y = (lparam >> 16 & 0xFFFF) as f32;
-
-                self.events.lock().push(Event::PointerMoved(Pos2::new(x, y)));
+            WM_MOUSEMOVE => self.events.lock().push(Event::PointerMoved(get_pos(&screen, lparam))),
+            WM_LBUTTONDOWN => {
+                self.events.lock().push(Event::PointerButton {
+                    pos: get_pos(&screen, lparam),
+                    button: PointerButton::Primary,
+                    pressed: true,
+                    modifiers: Modifiers::default(),
+                })
+            },
+            WM_LBUTTONUP => {
+                self.events.lock().push(Event::PointerButton {
+                    pos: get_pos(&screen, lparam),
+                    button: PointerButton::Primary,
+                    pressed: false,
+                    modifiers: Modifiers::default(),
+                })
             }
             _ => {}
         }
@@ -79,4 +88,13 @@ impl InputCollector {
             max: self.get_screen_size(),
         }
     }
+}
+
+fn get_pos(screen: &Pos2, lparam: isize) -> Pos2 {
+    let mut x = (lparam & 0xFFFF) as f32;
+    if x > screen.x { x = 0.; }
+    
+    let y = (lparam >> 16 & 0xFFFF) as f32;
+
+    Pos2::new(x, y)
 }
