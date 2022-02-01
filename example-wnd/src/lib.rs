@@ -115,7 +115,6 @@ fn ui(ctx: &CtxRef) {
         }
 
         ui.button("You can't click me yet");
-        
     });
 
     ctx.debug_painter().rect(

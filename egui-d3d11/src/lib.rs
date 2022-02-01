@@ -20,6 +20,7 @@ mod app;
 pub use app::*;
 
 mod backup;
+mod input;
 mod mesh;
 mod shader;
 mod texture;

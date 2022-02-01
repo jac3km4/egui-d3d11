@@ -1,4 +1,4 @@
-use egui::{CtxRef, Modifiers, Pos2, RawInput, Rect, TextureId};
+use egui::{CtxRef, Pos2, TextureId};
 use parking_lot::Mutex;
 use std::{
     intrinsics::transmute,
@@ -29,13 +29,13 @@ use windows::{
                 IDXGISwapChain,
             },
         },
-        System::WindowsProgramming::NtQuerySystemTime,
         UI::WindowsAndMessaging::GetClientRect,
     },
 };
 
 use crate::{
     backup::BackupState,
+    input::InputCollector,
     mesh::{convert_meshes, GpuMesh, GpuVertex, MeshBuffers},
     shader::CompiledShaders,
     texture::TextureAllocator,
@@ -51,6 +51,7 @@ pub struct DirectX11App {
     tex_alloc: TextureAllocator,
     sampler: ID3D11SamplerState,
     shaders: CompiledShaders,
+    input_collector: InputCollector,
     backup: BackupState,
     ctx: Mutex<CtxRef>,
     ui: fn(&CtxRef),
@@ -68,29 +69,6 @@ impl DirectX11App {
             x: (rect.right - rect.left) as f32,
             y: (rect.bottom - rect.top) as f32,
         }
-    }
-
-    #[inline]
-    fn get_screen_rect(&self) -> Rect {
-        Rect {
-            min: Pos2::ZERO,
-            max: self.get_screen_size(),
-        }
-    }
-
-    #[inline]
-    fn get_system_time() -> f64 {
-        let mut time = 0;
-        unsafe {
-            if NtQuerySystemTime(&mut time).is_err() {
-                if !cfg!(feature = "no-msgs") {
-                    panic!("Failed to get system's time.");
-                } else {
-                    unreachable!()
-                }
-            }
-        }
-        time as f64
     }
 
     const LAYOUT_ELEMENTS: [D3D11_INPUT_ELEMENT_DESC; 3] = [
@@ -331,6 +309,7 @@ impl DirectX11App {
             Self {
                 input_layout: Self::create_input_layout(&shaders, device),
                 sampler: Self::create_sampler_state(device),
+                input_collector: InputCollector::new(hwnd),
                 render_view: Mutex::new(render_view),
                 ctx: Mutex::new(CtxRef::default()),
                 tex_alloc: TextureAllocator::default(),
@@ -346,17 +325,8 @@ impl DirectX11App {
         let (device, context) = get_device_context(swap_chain);
 
         let ctx_lock = &mut *self.ctx.lock();
-
-        let input = RawInput {
-            screen_rect: Some(self.get_screen_rect()),
-            pixels_per_point: Some(1.),
-            time: Some(Self::get_system_time()),
-            predicted_dt: 1. / 60.,
-            modifiers: Modifiers::default(),
-            events: vec![],
-            hovered_files: vec![],
-            dropped_files: vec![],
-        };
+        
+        let input = self.input_collector.collect_input();
 
         let (_output, shapes) = ctx_lock.run(input, self.ui);
         self.tex_alloc
@@ -408,7 +378,9 @@ impl DirectX11App {
         }
     }
 
-    pub fn wnd_proc(&self, _hwnd: HWND, _msg: u32, _wparam: WPARAM, _lparam: LPARAM) -> bool {
+    #[inline]
+    pub fn wnd_proc(&self, _hwnd: HWND, umsg: u32, wparam: WPARAM, lparam: LPARAM) -> bool {
+        self.input_collector.process(umsg, wparam.0, lparam.0);
         true
     }
 }
