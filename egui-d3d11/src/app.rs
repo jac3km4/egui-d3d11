@@ -148,15 +148,22 @@ impl DirectX11App {
         screen_half.x /= 2.;
         screen_half.y /= 2.;
 
+        let normalize_point = |point: &mut Pos2| {
+            point.x -= screen_half.x;
+            point.y -= screen_half.y;
+
+            point.x /= screen_half.x;
+            point.y /= -screen_half.y;
+        };
+
         meshes
             .iter_mut()
-            .flat_map(|m| &mut m.vertices)
-            .for_each(|v| {
-                v.pos.x -= screen_half.x;
-                v.pos.y -= screen_half.y;
+            .map(|m| (&mut m.vertices, &mut m.rect))
+            .for_each(|(vertices, clip)| {
+                vertices.iter_mut().map(|v| &mut v.pos).for_each(normalize_point);
 
-                v.pos.x /= screen_half.x;
-                v.pos.y /= -screen_half.y;
+                normalize_point(&mut clip.min);
+                normalize_point(&mut clip.max)
             })
     }
 
@@ -211,7 +218,7 @@ impl DirectX11App {
             DepthBiasClamp: 0.,
             SlopeScaledDepthBias: 0.,
             DepthClipEnable: false.into(),
-            ScissorEnable: false.into(),
+            ScissorEnable: true.into(),
             MultisampleEnable: false.into(),
             AntialiasedLineEnable: false.into(),
         };
@@ -226,6 +233,20 @@ impl DirectX11App {
         }
     }
 
+    fn create_scissor_rects(meshes: &[GpuMesh]) -> Vec<RECT> {
+        meshes
+            .iter()
+            .map(|m| {
+                RECT {
+                    left: m.rect.left() as _,
+                    top: m.rect.top() as _,
+                    right: m.rect.right() as _,
+                    bottom: m.rect.bottom() as _,
+                }
+            })
+            .collect()
+    }
+
     fn render_meshes(
         &self,
         mut meshes: Vec<GpuMesh>,
@@ -233,6 +254,9 @@ impl DirectX11App {
         ctx: &ID3D11DeviceContext,
     ) {
         self.backup.save(ctx);
+
+        // Rects must be created before normalizing.
+        let scissor_rects = Self::create_scissor_rects(&meshes);
 
         self.normalize_meshes(&mut meshes);
         self.set_viewports(ctx);
@@ -247,10 +271,10 @@ impl DirectX11App {
             ctx.OMSetRenderTargets(1, transmute(view_lock), None);
             ctx.IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
             ctx.IASetInputLayout(&self.input_layout);
-
+            
             for mesh in &meshes {
                 let buffers = MeshBuffers::new(device, mesh);
-
+                
                 ctx.IASetVertexBuffers(
                     0,
                     1,
@@ -259,7 +283,9 @@ impl DirectX11App {
                     &0,
                 );
                 ctx.IASetIndexBuffer(&buffers.index, DXGI_FORMAT_R32_UINT, 0);
-
+                // This doesn't seem to affect anything even if rects are clearly cutting some parts out.
+                ctx.RSSetScissorRects(meshes.len() as u32, scissor_rects.as_ptr());
+                
                 ctx.VSSetShader(&self.shaders.vertex, null(), 0);
                 ctx.PSSetShader(&self.shaders.pixel, null(), 0);
                 ctx.PSSetSamplers(0, 1, transmute(&self.sampler));
