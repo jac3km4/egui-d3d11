@@ -55,15 +55,15 @@ struct InnerState {
     sampler: Option<ID3D11SamplerState>,
 
     vertex_shader: Option<ID3D11VertexShader>,
-    vertex_shader_instances: ClassIntances,
+    vertex_shader_instances: ClassInstances,
     vertex_shader_instances_count: u32,
 
     geometry_shader: Option<ID3D11GeometryShader>,
-    geometry_shader_instances: ClassIntances,
+    geometry_shader_instances: ClassInstances,
     geomentry_shader_instances_count: u32,
 
     pixel_shader: Option<ID3D11PixelShader>,
-    pixel_shader_instances: ClassIntances,
+    pixel_shader_instances: ClassInstances,
     pixel_shader_instances_count: u32,
 
     constant_buffer: Option<ID3D11Buffer>,
@@ -183,9 +183,9 @@ impl InnerState {
     }
 }
 
-struct ClassIntances([Option<ID3D11ClassInstance>; 256]);
+struct ClassInstances([Option<ID3D11ClassInstance>; 256]);
 
-impl ClassIntances {
+impl ClassInstances {
     #[inline]
     pub fn as_ptr(&self) -> *const Option<ID3D11ClassInstance> {
         &self.0[0]
@@ -202,7 +202,7 @@ impl ClassIntances {
     }
 }
 
-impl Default for ClassIntances {
+impl Default for ClassInstances {
     fn default() -> Self {
         unsafe { zeroed() }
     }
