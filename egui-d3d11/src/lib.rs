@@ -1,4 +1,4 @@
-/// This macros allows to hide panicing messages in output binary.
+/// This macros allows to hide panicing messages in output binary when feature `no-msgs` is present.
 macro_rules! expect {
     ($val:expr, $msg:expr) => {
         if cfg!(feature = "no-msgs") {

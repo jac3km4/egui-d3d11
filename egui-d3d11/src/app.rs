@@ -159,7 +159,13 @@ impl DirectX11App {
         }
     }
 
-    fn normalize_meshes(&self, meshes: &mut Vec<GpuMesh>) {
+    /// Converts texture coords to directx coords which looks like this.
+    /// (-1, 1) ============ (1 , 1)
+    /// ||                        ||
+    /// ||         (0, 0)         ||
+    /// ||                        ||
+    /// (-1,-1) ============ (1 ,-1)
+    fn normalize_meshes(&self, meshes: &mut [GpuMesh]) {
         let mut screen_half = self.get_screen_size();
         screen_half.x /= 2.;
         screen_half.y /= 2.;

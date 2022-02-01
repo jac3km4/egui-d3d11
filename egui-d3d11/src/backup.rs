@@ -14,6 +14,8 @@ use windows::Win32::{
     },
 };
 
+/// Structe used to backup all data from directx context.
+/// Thanks ImGui.
 #[derive(Default)]
 pub struct BackupState(RefCell<InnerState>);
 

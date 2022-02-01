@@ -5,6 +5,9 @@ use windows::Win32::Graphics::Direct3D11::{
     D3D11_BUFFER_DESC, D3D11_SUBRESOURCE_DATA, D3D11_USAGE_DEFAULT,
 };
 
+/// Egui's [`egui::epaint::Vertex`] uses sRGB colors.
+/// I can't be asked to make them work out of the box with hlsl.
+/// Color in this vertex uses linear space which I am correcting to gamma in pixel shader.
 #[repr(C)]
 pub struct GpuVertex {
     pub pos: Pos2,
