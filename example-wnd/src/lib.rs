@@ -2,7 +2,7 @@
 
 use std::intrinsics::transmute;
 
-use egui::{Color32, CtxRef, Pos2, Rect, Stroke};
+use egui::{Color32, CtxRef, Pos2, Rect, Stroke, RichText};
 use egui_d3d11::DirectX11App;
 use radon::{internal::alloc_console, pattern::Pattern};
 use windows::{
@@ -101,9 +101,9 @@ unsafe extern "stdcall" fn hk_wnd_proc(
 }
 
 fn ui(ctx: &CtxRef) {
-    // ctx.memory().options.tessellation_options.anti_alias = false;
-
-    egui::containers::Window::new("").show(ctx, |ui| {});
+    egui::containers::Window::new("Main menu").show(ctx, |ui| {
+        ui.label(RichText::new("Test").color(Color32::BLACK));
+    });
 
     ctx.debug_painter().rect(
         Rect {

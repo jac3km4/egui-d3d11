@@ -1,4 +1,4 @@
-use egui::{CtxRef, Modifiers, Pos2, RawInput, Rect};
+use egui::{CtxRef, Modifiers, Pos2, RawInput, Rect, TextureId};
 use parking_lot::Mutex;
 use std::{
     intrinsics::transmute,
@@ -17,7 +17,7 @@ use windows::{
                 D3D11_BLEND_INV_SRC_ALPHA, D3D11_BLEND_ONE, D3D11_BLEND_OP_ADD,
                 D3D11_BLEND_SRC_ALPHA, D3D11_COLOR_WRITE_ENABLE_ALL, D3D11_CULL_NONE,
                 D3D11_FILL_SOLID, D3D11_INPUT_ELEMENT_DESC, D3D11_INPUT_PER_VERTEX_DATA,
-                D3D11_RASTERIZER_DESC, D3D11_RENDER_TARGET_BLEND_DESC, D3D11_VIEWPORT,
+                D3D11_RASTERIZER_DESC, D3D11_RENDER_TARGET_BLEND_DESC, D3D11_VIEWPORT, ID3D11SamplerState, D3D11_SAMPLER_DESC, D3D11_FILTER_MIN_MAG_MIP_LINEAR, D3D11_TEXTURE_ADDRESS_BORDER, D3D11_COMPARISON_ALWAYS,
             },
             Dxgi::{
                 Common::{
@@ -35,7 +35,7 @@ use windows::{
 use crate::{
     backup::BackupState,
     mesh::{convert_meshes, GpuMesh, GpuVertex, MeshBuffers},
-    shader::CompiledShaders,
+    shader::CompiledShaders, texture::TextureAllocator,
 };
 
 type FnResizeBuffers =
@@ -45,6 +45,8 @@ type FnResizeBuffers =
 pub struct DirectX11App {
     render_view: Mutex<ID3D11RenderTargetView>,
     input_layout: ID3D11InputLayout,
+    tex_alloc: TextureAllocator,
+    sampler: ID3D11SamplerState,
     shaders: CompiledShaders,
     backup: BackupState,
     ctx: Mutex<CtxRef>,
@@ -128,6 +130,28 @@ impl DirectX11App {
                     shaders.blobs.vertex.GetBufferSize()
                 ),
                 "Failed to create input layout."
+            )
+        }
+    }
+
+    fn create_sampler_state(device: &ID3D11Device) -> ID3D11SamplerState {
+        let sampler_desc = D3D11_SAMPLER_DESC {
+            Filter: D3D11_FILTER_MIN_MAG_MIP_LINEAR,
+            AddressU: D3D11_TEXTURE_ADDRESS_BORDER,
+            AddressV: D3D11_TEXTURE_ADDRESS_BORDER,
+            AddressW: D3D11_TEXTURE_ADDRESS_BORDER,
+            MipLODBias: 0.,
+            MaxAnisotropy: 1,
+            ComparisonFunc: D3D11_COMPARISON_ALWAYS,
+            BorderColor: [1., 1., 1., 1.],
+            MinLOD: 0.,
+            MaxLOD: 0.,
+        };
+
+        unsafe {
+            expect!(
+                device.CreateSamplerState(&sampler_desc),
+                "Failed to create sampler state"
             )
         }
     }
@@ -219,44 +243,50 @@ impl DirectX11App {
         &self,
         mut meshes: Vec<GpuMesh>,
         device: &ID3D11Device,
-        context: &ID3D11DeviceContext,
+        ctx: &ID3D11DeviceContext,
     ) {
-        self.backup.save(context);
+        self.backup.save(ctx);
 
         self.normalize_meshes(&mut meshes);
-        self.set_viewports(context);
-        self.set_blend_state(device, context);
-        self.set_raster_state(device, context);
+        self.set_viewports(ctx);
+        self.set_blend_state(device, ctx);
+        self.set_raster_state(device, ctx);
 
         let view_lock = &mut *self.render_view.lock();
 
         unsafe {
             // context.ClearRenderTargetView(view_lock.clone(), [1., 0., 0., 0.3].as_ptr());
 
-            context.OMSetRenderTargets(1, transmute(view_lock), None);
-            context.IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-            context.IASetInputLayout(&self.input_layout);
+            ctx.OMSetRenderTargets(1, transmute(view_lock), None);
+            ctx.IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+            ctx.IASetInputLayout(&self.input_layout);
 
             for mesh in &meshes {
                 let buffers = MeshBuffers::new(device, mesh);
 
-                context.IASetVertexBuffers(
+                ctx.IASetVertexBuffers(
                     0,
                     1,
                     &Some(buffers.vertex),
                     &(size_of::<GpuVertex>() as _),
                     &0,
                 );
-                context.IASetIndexBuffer(&buffers.index, DXGI_FORMAT_R32_UINT, 0);
+                ctx.IASetIndexBuffer(&buffers.index, DXGI_FORMAT_R32_UINT, 0);
 
-                context.VSSetShader(&self.shaders.vertex, null(), 0);
-                context.PSSetShader(&self.shaders.pixel, null(), 0);
+                ctx.VSSetShader(&self.shaders.vertex, null(), 0);
+                ctx.PSSetShader(&self.shaders.pixel, null(), 0);
+                ctx.PSSetSamplers(0, 1, transmute(&self.sampler));
+                ctx.GSSetShader(None, null(), 0);
 
-                context.DrawIndexed(mesh.indices.len() as _, 0, 0);
+                if mesh.tex_id == TextureId::Egui {
+                    ctx.PSSetShaderResources(0, 1, self.tex_alloc.font_resource());
+                }
+
+                ctx.DrawIndexed(mesh.indices.len() as _, 0, 0);
             }
         }
 
-        self.backup.restore(context);
+        self.backup.restore(ctx);
     }
 }
 
@@ -288,13 +318,14 @@ impl DirectX11App {
             );
 
             let shaders = CompiledShaders::new(device);
-            let input_layout = Self::create_input_layout(&shaders, device);
 
             Self {
+                input_layout: Self::create_input_layout(&shaders, device),
+                sampler: Self::create_sampler_state(device),
                 render_view: Mutex::new(render_view),
                 ctx: Mutex::new(CtxRef::default()),
+                tex_alloc: TextureAllocator::default(),
                 backup: BackupState::default(),
-                input_layout,
                 shaders,
                 hwnd,
                 ui,
@@ -319,6 +350,7 @@ impl DirectX11App {
         };
 
         let (_output, shapes) = ctx_lock.run(input, self.ui);
+        self.tex_alloc.update_font_if_needed(&device, &*ctx_lock.font_image());
         let meshes = convert_meshes(ctx_lock.tessellate(shapes));
 
         self.render_meshes(meshes, &device, &context);

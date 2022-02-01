@@ -1,4 +1,4 @@
-use egui::{epaint::Vertex, ClippedMesh, Pos2, Rect, Rgba};
+use egui::{epaint::Vertex, ClippedMesh, Pos2, Rect, Rgba, TextureId};
 use std::mem::size_of;
 use windows::Win32::Graphics::Direct3D11::{
     ID3D11Buffer, ID3D11Device, D3D11_BIND_INDEX_BUFFER, D3D11_BIND_VERTEX_BUFFER,
@@ -25,18 +25,20 @@ impl From<Vertex> for GpuVertex {
 
 #[repr(C)]
 pub struct GpuMesh {
-    pub rect: Rect,
-    pub indices: Vec<u32>,
     pub vertices: Vec<GpuVertex>,
+    pub indices: Vec<u32>,
+    pub tex_id: TextureId,
+    pub rect: Rect,
 }
 
 impl From<ClippedMesh> for GpuMesh {
     #[inline]
     fn from(cm: ClippedMesh) -> Self {
         Self {
-            rect: cm.0,
-            indices: cm.1.indices,
             vertices: cm.1.vertices.into_iter().map(GpuVertex::from).collect(),
+            tex_id: cm.1.texture_id,
+            indices: cm.1.indices,
+            rect: cm.0,
         }
     }
 }
