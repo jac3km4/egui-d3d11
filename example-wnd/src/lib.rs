@@ -101,14 +101,27 @@ unsafe extern "stdcall" fn hk_wnd_proc(
 }
 
 fn ui(ctx: &CtxRef) {
+    static mut UI_CHECK: bool = true;
+
     egui::containers::Window::new("Main menu").show(ctx, |ui| {
         ui.label(RichText::new("Test").color(Color32::BLACK));
+        ui.label(RichText::new("Other").color(Color32::WHITE));
+        ui.separator();
+
+        ui.label(RichText::new("Label").color(Color32::LIGHT_RED));
+
+        unsafe {
+            ui.checkbox(&mut UI_CHECK, "Some checkbox");
+        }
+
+        ui.button("You can't click me yet");
+        
     });
 
     ctx.debug_painter().rect(
         Rect {
-            min: Pos2::new(100.0, 100.0),
-            max: Pos2::new(150.0, 150.0),
+            min: Pos2::new(200.0, 200.0),
+            max: Pos2::new(300.0, 300.0),
         },
         10.0,
         Color32::from_rgba_premultiplied(255, 0, 0, 150),
@@ -116,8 +129,8 @@ fn ui(ctx: &CtxRef) {
     );
 
     ctx.debug_painter().circle(
-        Pos2::new(150.0, 150.0),
-        35.0,
+        Pos2::new(350.0, 350.0),
+        75.0,
         Color32::from_rgba_premultiplied(0, 255, 0, 200),
         Stroke::none(),
     );
