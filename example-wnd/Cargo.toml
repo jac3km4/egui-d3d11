@@ -2,6 +2,9 @@
 name = "example-wnd"
 version = "0.1.0"
 edition = "2021"
+authors = ["sy1ntexx"]
+description = "Example dll for egui d3d11 showcase."
+license = "MIT"
 
 [lib]
 crate-type = ["cdylib"]
@@ -14,10 +17,10 @@ libc = "0.2.112"
 path = "../egui-d3d11"
 
 [dependencies.sunshine]
-path = "../../sunshine"
+git = "https://github.com/sy1ntexx/sunshine"
 
 [dependencies.radon]
-path = "../../radon"
+git = "https://github.com/sy1ntexx/radon"
 
 [dependencies.windows]
 version = "0.30.0"

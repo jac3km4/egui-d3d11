@@ -2,7 +2,7 @@
 
 use std::intrinsics::transmute;
 
-use egui::{Color32, CtxRef, Pos2, Rect, Stroke, RichText};
+use egui::{Color32, CtxRef, Pos2, Rect, RichText, Stroke};
 use egui_d3d11::DirectX11App;
 use radon::{internal::alloc_console, pattern::Pattern};
 use windows::{

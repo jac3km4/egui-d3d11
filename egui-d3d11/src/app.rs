@@ -13,11 +13,13 @@ use windows::{
             Direct3D::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
             Direct3D11::{
                 ID3D11Device, ID3D11DeviceContext, ID3D11InputLayout, ID3D11RenderTargetView,
-                ID3D11Texture2D, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_BLEND_DESC,
-                D3D11_BLEND_INV_SRC_ALPHA, D3D11_BLEND_ONE, D3D11_BLEND_OP_ADD,
-                D3D11_BLEND_SRC_ALPHA, D3D11_COLOR_WRITE_ENABLE_ALL, D3D11_CULL_NONE,
-                D3D11_FILL_SOLID, D3D11_INPUT_ELEMENT_DESC, D3D11_INPUT_PER_VERTEX_DATA,
-                D3D11_RASTERIZER_DESC, D3D11_RENDER_TARGET_BLEND_DESC, D3D11_VIEWPORT, ID3D11SamplerState, D3D11_SAMPLER_DESC, D3D11_FILTER_MIN_MAG_MIP_LINEAR, D3D11_TEXTURE_ADDRESS_BORDER, D3D11_COMPARISON_ALWAYS,
+                ID3D11SamplerState, ID3D11Texture2D, D3D11_APPEND_ALIGNED_ELEMENT,
+                D3D11_BLEND_DESC, D3D11_BLEND_INV_SRC_ALPHA, D3D11_BLEND_ONE, D3D11_BLEND_OP_ADD,
+                D3D11_BLEND_SRC_ALPHA, D3D11_COLOR_WRITE_ENABLE_ALL, D3D11_COMPARISON_ALWAYS,
+                D3D11_CULL_NONE, D3D11_FILL_SOLID, D3D11_FILTER_MIN_MAG_MIP_LINEAR,
+                D3D11_INPUT_ELEMENT_DESC, D3D11_INPUT_PER_VERTEX_DATA, D3D11_RASTERIZER_DESC,
+                D3D11_RENDER_TARGET_BLEND_DESC, D3D11_SAMPLER_DESC, D3D11_TEXTURE_ADDRESS_BORDER,
+                D3D11_VIEWPORT,
             },
             Dxgi::{
                 Common::{
@@ -35,7 +37,8 @@ use windows::{
 use crate::{
     backup::BackupState,
     mesh::{convert_meshes, GpuMesh, GpuVertex, MeshBuffers},
-    shader::CompiledShaders, texture::TextureAllocator,
+    shader::CompiledShaders,
+    texture::TextureAllocator,
 };
 
 type FnResizeBuffers =
@@ -350,7 +353,8 @@ impl DirectX11App {
         };
 
         let (_output, shapes) = ctx_lock.run(input, self.ui);
-        self.tex_alloc.update_font_if_needed(&device, &*ctx_lock.font_image());
+        self.tex_alloc
+            .update_font_if_needed(&device, &*ctx_lock.font_image());
         let meshes = convert_meshes(ctx_lock.tessellate(shapes));
 
         self.render_meshes(meshes, &device, &context);

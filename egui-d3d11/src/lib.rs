@@ -19,7 +19,7 @@ macro_rules! c_str {
 mod app;
 pub use app::*;
 
-mod texture;
 mod backup;
-mod shader;
 mod mesh;
+mod shader;
+mod texture;

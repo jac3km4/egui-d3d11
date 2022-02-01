@@ -1,11 +1,19 @@
 use egui::FontImage;
-use windows::Win32::Graphics::{Direct3D11::{ID3D11ShaderResourceView, ID3D11Device, D3D11_TEXTURE2D_DESC, D3D11_USAGE_DEFAULT, D3D11_BIND_SHADER_RESOURCE, D3D11_SUBRESOURCE_DATA, D3D11_SHADER_RESOURCE_VIEW_DESC, D3D11_SHADER_RESOURCE_VIEW_DESC_0, D3D11_TEX2D_SRV}, Dxgi::Common::{DXGI_FORMAT_R8_UNORM, DXGI_SAMPLE_DESC}, Direct3D::D3D11_SRV_DIMENSION_TEXTURE2D};
 use std::cell::Cell;
+use windows::Win32::Graphics::{
+    Direct3D::D3D11_SRV_DIMENSION_TEXTURE2D,
+    Direct3D11::{
+        ID3D11Device, ID3D11ShaderResourceView, D3D11_BIND_SHADER_RESOURCE,
+        D3D11_SHADER_RESOURCE_VIEW_DESC, D3D11_SHADER_RESOURCE_VIEW_DESC_0, D3D11_SUBRESOURCE_DATA,
+        D3D11_TEX2D_SRV, D3D11_TEXTURE2D_DESC, D3D11_USAGE_DEFAULT,
+    },
+    Dxgi::Common::{DXGI_FORMAT_R8_UNORM, DXGI_SAMPLE_DESC},
+};
 
 #[derive(Default)]
 pub struct TextureAllocator {
     font: Cell<Option<ID3D11ShaderResourceView>>,
-    hash: Cell<u64>
+    hash: Cell<u64>,
 }
 
 impl TextureAllocator {
@@ -53,7 +61,7 @@ impl TextureAllocator {
                     Texture2D: D3D11_TEX2D_SRV {
                         MostDetailedMip: 0,
                         MipLevels: 1,
-                    }
+                    },
                 },
             };
 
@@ -67,4 +75,3 @@ impl TextureAllocator {
         }
     }
 }
-
