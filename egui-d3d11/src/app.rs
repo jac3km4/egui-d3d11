@@ -1,4 +1,4 @@
-use egui::{epaint::Vertex, ClippedMesh, CtxRef, Modifiers, Pos2, RawInput, Rect};
+use egui::{CtxRef, Modifiers, Pos2, RawInput, Rect};
 use parking_lot::Mutex;
 use std::{
     intrinsics::transmute,
@@ -21,8 +21,8 @@ use windows::{
             },
             Dxgi::{
                 Common::{
-                    DXGI_FORMAT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R32_UINT,
-                    DXGI_FORMAT_R8G8B8A8_UNORM,
+                    DXGI_FORMAT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R32G32_FLOAT,
+                    DXGI_FORMAT_R32_UINT,
                 },
                 IDXGISwapChain,
             },
@@ -32,7 +32,11 @@ use windows::{
     },
 };
 
-use crate::{backup::BackupState, mesh::MeshBuffers, shader::CompiledShaders};
+use crate::{
+    backup::BackupState,
+    mesh::{convert_meshes, GpuMesh, GpuVertex, MeshBuffers},
+    shader::CompiledShaders,
+};
 
 type FnResizeBuffers =
     unsafe extern "stdcall" fn(IDXGISwapChain, u32, u32, u32, DXGI_FORMAT, u32) -> HRESULT;
@@ -106,7 +110,7 @@ impl DirectX11App {
         D3D11_INPUT_ELEMENT_DESC {
             SemanticName: c_str!("COLOR"),
             SemanticIndex: 0,
-            Format: DXGI_FORMAT_R8G8B8A8_UNORM,
+            Format: DXGI_FORMAT_R32G32B32A32_FLOAT,
             InputSlot: 0,
             AlignedByteOffset: D3D11_APPEND_ALIGNED_ELEMENT,
             InputSlotClass: D3D11_INPUT_PER_VERTEX_DATA,
@@ -128,15 +132,14 @@ impl DirectX11App {
         }
     }
 
-    fn normalize_meshes(&self, meshes: &mut Vec<ClippedMesh>) {
+    fn normalize_meshes(&self, meshes: &mut Vec<GpuMesh>) {
         let mut screen_half = self.get_screen_size();
         screen_half.x /= 2.;
         screen_half.y /= 2.;
 
         meshes
             .iter_mut()
-            .map(|m| &mut m.1.vertices)
-            .flatten()
+            .flat_map(|m| &mut m.vertices)
             .for_each(|v| {
                 v.pos.x -= screen_half.x;
                 v.pos.y -= screen_half.y;
@@ -214,7 +217,7 @@ impl DirectX11App {
 
     fn render_meshes(
         &self,
-        mut meshes: Vec<ClippedMesh>,
+        mut meshes: Vec<GpuMesh>,
         device: &ID3D11Device,
         context: &ID3D11DeviceContext,
     ) {
@@ -228,20 +231,20 @@ impl DirectX11App {
         let view_lock = &mut *self.render_view.lock();
 
         unsafe {
-            context.ClearRenderTargetView(view_lock.clone(), [1., 0., 0., 0.3].as_ptr());
+            // context.ClearRenderTargetView(view_lock.clone(), [1., 0., 0., 0.3].as_ptr());
 
             context.OMSetRenderTargets(1, transmute(view_lock), None);
             context.IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
             context.IASetInputLayout(&self.input_layout);
 
             for mesh in &meshes {
-                let buffers = MeshBuffers::new(device, &mesh);
+                let buffers = MeshBuffers::new(device, mesh);
 
                 context.IASetVertexBuffers(
                     0,
                     1,
                     &Some(buffers.vertex),
-                    &(size_of::<Vertex>() as _),
+                    &(size_of::<GpuVertex>() as _),
                     &0,
                 );
                 context.IASetIndexBuffer(&buffers.index, DXGI_FORMAT_R32_UINT, 0);
@@ -249,7 +252,7 @@ impl DirectX11App {
                 context.VSSetShader(&self.shaders.vertex, null(), 0);
                 context.PSSetShader(&self.shaders.pixel, null(), 0);
 
-                context.DrawIndexed(mesh.1.indices.len() as _, 0, 0);
+                context.DrawIndexed(mesh.indices.len() as _, 0, 0);
             }
         }
 
@@ -316,7 +319,7 @@ impl DirectX11App {
         };
 
         let (_output, shapes) = ctx_lock.run(input, self.ui);
-        let meshes = ctx_lock.tessellate(shapes);
+        let meshes = convert_meshes(ctx_lock.tessellate(shapes));
 
         self.render_meshes(meshes, &device, &context);
     }

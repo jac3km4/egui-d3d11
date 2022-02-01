@@ -1,9 +1,45 @@
-use egui::{epaint::Vertex, ClippedMesh};
+use egui::{epaint::Vertex, ClippedMesh, Pos2, Rect, Rgba};
 use std::mem::size_of;
 use windows::Win32::Graphics::Direct3D11::{
     ID3D11Buffer, ID3D11Device, D3D11_BIND_INDEX_BUFFER, D3D11_BIND_VERTEX_BUFFER,
     D3D11_BUFFER_DESC, D3D11_SUBRESOURCE_DATA, D3D11_USAGE_DEFAULT,
 };
+
+#[repr(C)]
+pub struct GpuVertex {
+    pub pos: Pos2,
+    pub uv: Pos2,
+    pub color: Rgba,
+}
+
+impl From<Vertex> for GpuVertex {
+    #[inline]
+    fn from(v: Vertex) -> Self {
+        Self {
+            pos: v.pos,
+            uv: v.uv,
+            color: v.color.into(),
+        }
+    }
+}
+
+#[repr(C)]
+pub struct GpuMesh {
+    pub rect: Rect,
+    pub indices: Vec<u32>,
+    pub vertices: Vec<GpuVertex>,
+}
+
+impl From<ClippedMesh> for GpuMesh {
+    #[inline]
+    fn from(cm: ClippedMesh) -> Self {
+        Self {
+            rect: cm.0,
+            indices: cm.1.indices,
+            vertices: cm.1.vertices.into_iter().map(GpuVertex::from).collect(),
+        }
+    }
+}
 
 pub struct MeshBuffers {
     pub vertex: ID3D11Buffer,
@@ -11,16 +47,16 @@ pub struct MeshBuffers {
 }
 
 impl MeshBuffers {
-    pub fn new(device: &ID3D11Device, mesh: &ClippedMesh) -> Self {
+    pub fn new(device: &ID3D11Device, mesh: &GpuMesh) -> Self {
         Self {
             vertex: Self::create_vertex_buffer(device, mesh),
             index: Self::create_index_buffer(device, mesh),
         }
     }
 
-    fn create_vertex_buffer(device: &ID3D11Device, mesh: &ClippedMesh) -> ID3D11Buffer {
+    fn create_vertex_buffer(device: &ID3D11Device, mesh: &GpuMesh) -> ID3D11Buffer {
         let buffer_desc = D3D11_BUFFER_DESC {
-            ByteWidth: (mesh.1.vertices.len() * size_of::<Vertex>()) as _,
+            ByteWidth: (mesh.vertices.len() * size_of::<GpuVertex>()) as _,
             Usage: D3D11_USAGE_DEFAULT,
             BindFlags: D3D11_BIND_VERTEX_BUFFER,
             CPUAccessFlags: 0,
@@ -29,7 +65,7 @@ impl MeshBuffers {
         };
 
         let init_data = D3D11_SUBRESOURCE_DATA {
-            pSysMem: mesh.1.vertices.as_ptr() as _,
+            pSysMem: mesh.vertices.as_ptr() as _,
             SysMemPitch: 0,
             SysMemSlicePitch: 0,
         };
@@ -42,9 +78,9 @@ impl MeshBuffers {
         }
     }
 
-    fn create_index_buffer(device: &ID3D11Device, mesh: &ClippedMesh) -> ID3D11Buffer {
+    fn create_index_buffer(device: &ID3D11Device, mesh: &GpuMesh) -> ID3D11Buffer {
         let buffer_desc = D3D11_BUFFER_DESC {
-            ByteWidth: (mesh.1.indices.len() * size_of::<u32>()) as _,
+            ByteWidth: (mesh.indices.len() * size_of::<u32>()) as _,
             Usage: D3D11_USAGE_DEFAULT,
             BindFlags: D3D11_BIND_INDEX_BUFFER,
             CPUAccessFlags: 0,
@@ -53,7 +89,7 @@ impl MeshBuffers {
         };
 
         let init_data = D3D11_SUBRESOURCE_DATA {
-            pSysMem: mesh.1.indices.as_ptr() as _,
+            pSysMem: mesh.indices.as_ptr() as _,
             SysMemPitch: 0,
             SysMemSlicePitch: 0,
         };
@@ -65,4 +101,9 @@ impl MeshBuffers {
             )
         }
     }
+}
+
+#[inline]
+pub fn convert_meshes(clipped: Vec<ClippedMesh>) -> Vec<GpuMesh> {
+    clipped.into_iter().map(GpuMesh::from).collect()
 }

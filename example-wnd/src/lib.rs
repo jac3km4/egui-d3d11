@@ -48,13 +48,14 @@ unsafe extern "stdcall" fn hk_present(
     if OLD_WND_PROC.is_none() {
         APP = Some(DirectX11App::new(ui, &swap_chain, &device));
 
-        let hwnd = swap_chain.GetDesc().unwrap().OutputWindow;
-        if hwnd.is_invalid() {
+        let desc = swap_chain.GetDesc().unwrap();
+        if desc.OutputWindow.is_invalid() {
             panic!("Invalid window handle.");
         }
+        eprintln!("{}", desc.BufferDesc.Format);
 
         OLD_WND_PROC = Some(transmute(SetWindowLongPtrA(
-            hwnd,
+            desc.OutputWindow,
             GWLP_WNDPROC,
             hk_wnd_proc as usize as _,
         )));
@@ -100,7 +101,7 @@ unsafe extern "stdcall" fn hk_wnd_proc(
 }
 
 fn ui(ctx: &CtxRef) {
-    ctx.memory().options.tessellation_options.anti_alias = false;
+    // ctx.memory().options.tessellation_options.anti_alias = false;
 
     egui::containers::Window::new("").show(ctx, |ui| {});
 
