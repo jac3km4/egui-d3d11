@@ -160,7 +160,10 @@ impl DirectX11App {
             .iter_mut()
             .map(|m| (&mut m.vertices, &mut m.rect))
             .for_each(|(vertices, clip)| {
-                vertices.iter_mut().map(|v| &mut v.pos).for_each(normalize_point);
+                vertices
+                    .iter_mut()
+                    .map(|v| &mut v.pos)
+                    .for_each(normalize_point);
 
                 normalize_point(&mut clip.min);
                 normalize_point(&mut clip.max)
@@ -236,13 +239,11 @@ impl DirectX11App {
     fn create_scissor_rects(meshes: &[GpuMesh]) -> Vec<RECT> {
         meshes
             .iter()
-            .map(|m| {
-                RECT {
-                    left: m.rect.left() as _,
-                    top: m.rect.top() as _,
-                    right: m.rect.right() as _,
-                    bottom: m.rect.bottom() as _,
-                }
+            .map(|m| RECT {
+                left: m.rect.left() as _,
+                top: m.rect.top() as _,
+                right: m.rect.right() as _,
+                bottom: m.rect.bottom() as _,
             })
             .collect()
     }
@@ -271,10 +272,10 @@ impl DirectX11App {
             ctx.OMSetRenderTargets(1, transmute(view_lock), None);
             ctx.IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
             ctx.IASetInputLayout(&self.input_layout);
-            
+
             for mesh in &meshes {
                 let buffers = MeshBuffers::new(device, mesh);
-                
+
                 ctx.IASetVertexBuffers(
                     0,
                     1,
@@ -285,7 +286,7 @@ impl DirectX11App {
                 ctx.IASetIndexBuffer(&buffers.index, DXGI_FORMAT_R32_UINT, 0);
                 // This doesn't seem to affect anything even if rects are clearly cutting some parts out.
                 ctx.RSSetScissorRects(meshes.len() as u32, scissor_rects.as_ptr());
-                
+
                 ctx.VSSetShader(&self.shaders.vertex, null(), 0);
                 ctx.PSSetShader(&self.shaders.pixel, null(), 0);
                 ctx.PSSetSamplers(0, 1, transmute(&self.sampler));
@@ -351,7 +352,7 @@ impl DirectX11App {
         let (device, context) = get_device_context(swap_chain);
 
         let ctx_lock = &mut *self.ctx.lock();
-        
+
         let input = self.input_collector.collect_input();
 
         let (_output, shapes) = ctx_lock.run(input, self.ui);

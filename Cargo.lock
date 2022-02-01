@@ -253,7 +253,7 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 [[package]]
 name = "sunshine"
 version = "0.1.0"
-source = "git+https://github.com/sy1ntexx/sunshine#77098ab33a44ff2a55bdef7b1f6fec2c3de83737"
+source = "git+https://github.com/sy1ntexx/sunshine#6ee5cefbdd49937fa8562304d0b0c7a4ab4f6781"
 dependencies = [
  "cfg-if",
  "iced-x86",
