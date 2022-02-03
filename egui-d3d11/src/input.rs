@@ -1,12 +1,19 @@
-use egui::{Event, Modifiers, PointerButton, Pos2, RawInput, Rect};
+use egui::{Event, Key, Modifiers, PointerButton, Pos2, RawInput, Rect};
 use parking_lot::Mutex;
 use windows::Win32::{
     Foundation::{HWND, RECT},
     System::WindowsProgramming::NtQuerySystemTime,
-    UI::WindowsAndMessaging::{
-        GetClientRect, MK_CONTROL, MK_SHIFT, WM_LBUTTONDBLCLK, WM_LBUTTONDOWN, WM_LBUTTONUP,
-        WM_MBUTTONDBLCLK, WM_MBUTTONDOWN, WM_MBUTTONUP, WM_MOUSEMOVE, WM_RBUTTONDBLCLK,
-        WM_RBUTTONDOWN, WM_RBUTTONUP, WM_CHAR,
+    UI::{
+        Input::KeyboardAndMouse::{
+            VK_BACK, VK_DELETE, VK_DOWN, VK_END, VK_ESCAPE, VK_HOME, VK_INSERT, VK_LEFT, VK_NEXT,
+            VK_PRIOR, VK_RETURN, VK_RIGHT, VK_SPACE, VK_TAB, VK_UP,
+        },
+        WindowsAndMessaging::{
+            GetClientRect, MK_CONTROL, MK_SHIFT, WM_CHAR, WM_KEYDOWN, WM_KEYUP, WM_LBUTTONDBLCLK,
+            WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MBUTTONDBLCLK, WM_MBUTTONDOWN, WM_MBUTTONUP,
+            WM_MOUSEMOVE, WM_RBUTTONDBLCLK, WM_RBUTTONDOWN, WM_RBUTTONUP, WM_SYSKEYDOWN,
+            WM_SYSKEYUP,
+        },
     },
 };
 
@@ -65,11 +72,37 @@ impl InputCollector {
                 pressed: false,
                 modifiers: get_modifiers(wparam),
             }),
-            // TODO: Use WM_UNICHAR instead.
+            // TODO: Replace with WM_UNICHAR instead.
             // Didn't fixed immediatelly because idk why I am not receiving any of those events.
             WM_CHAR => {
                 if let Some(ch) = char::from_u32(wparam as _) {
-                    self.events.lock().push(Event::Text(ch.into()));
+                    if ch.is_alphanumeric() {
+                        self.events.lock().push(Event::Text(ch.into()));
+                    }
+                }
+            }
+            msg @ (WM_KEYDOWN | WM_SYSKEYDOWN) => {
+                if let Some(key) = get_key(wparam) {
+                    self.events.lock().push(Event::Key {
+                        key,
+                        pressed: true,
+                        modifiers: Modifiers {
+                            alt: msg == WM_SYSKEYDOWN,
+                            ..Default::default()
+                        },
+                    });
+                }
+            }
+            msg @ (WM_KEYUP | WM_SYSKEYUP) => {
+                if let Some(key) = get_key(wparam) {
+                    self.events.lock().push(Event::Key {
+                        key,
+                        pressed: false,
+                        modifiers: Modifiers {
+                            alt: msg == WM_SYSKEYDOWN,
+                            ..Default::default()
+                        },
+                    });
                 }
             }
             _ => {}
@@ -142,4 +175,36 @@ fn get_modifiers(wparam: usize) -> Modifiers {
         mac_cmd: false,
         command: false,
     }
+}
+
+fn get_key(wparam: usize) -> Option<Key> {
+    match wparam {
+        0x30..=0x39 => unsafe { Some(std::mem::transmute::<_, Key>(wparam as u8 - 0x21)) },
+        0x41..=0x5A => unsafe { Some(std::mem::transmute::<_, Key>(wparam as u8 - 0x28)) },
+        _ => match wparam as u16 {
+            VK_DOWN => Some(Key::ArrowDown),
+            VK_LEFT => Some(Key::ArrowLeft),
+            VK_RIGHT => Some(Key::ArrowRight),
+            VK_UP => Some(Key::ArrowUp),
+            VK_ESCAPE => Some(Key::Escape),
+            VK_TAB => Some(Key::Tab),
+            VK_BACK => Some(Key::Backspace),
+            VK_RETURN => Some(Key::Enter),
+            VK_SPACE => Some(Key::Space),
+            VK_INSERT => Some(Key::Insert),
+            VK_DELETE => Some(Key::Delete),
+            VK_HOME => Some(Key::Home),
+            VK_END => Some(Key::Home),
+            VK_PRIOR => Some(Key::PageUp),
+            VK_NEXT => Some(Key::PageDown),
+            _ => None,
+        },
+    }
+}
+
+#[test]
+fn test() {
+    println!("{:?}", std::mem::discriminant(&Key::Num0));
+    println!("{:X}", 0x30 - 15);
+    println!("{:?}", get_key(0x36));
 }

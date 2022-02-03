@@ -122,8 +122,15 @@ fn ui(ctx: &CtxRef) {
             ui.text_edit_singleline(TEXT.as_mut().unwrap());
         }
 
-        ui.label(format!("{:?}", &ui.input().pointer.button_down(egui::PointerButton::Primary)));
+        ui.label(format!(
+            "{:?}",
+            &ui.input().pointer.button_down(egui::PointerButton::Primary)
+        ));
         ui.button("You can't click me yet");
+    });
+
+    egui::Window::new("Debug").show(ctx, |ui| {
+        ui.input().clone().ui(ui);
     });
 
     ctx.debug_painter().rect(
