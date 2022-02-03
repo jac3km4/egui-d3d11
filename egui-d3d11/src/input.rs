@@ -75,14 +75,18 @@ impl InputCollector {
             // TODO: Decide if adding `WM_SYSCHAR` is necessary.
             WM_CHAR /* | WM_SYSCHAR */ => {
                 if let Some(ch) = char::from_u32(wparam as _) {
-                    if ch.is_alphanumeric() {
+                    if !ch.is_control() {
                         self.events.lock().push(Event::Text(ch.into()));
                     }
                 }
             }
             msg @ (WM_KEYDOWN | WM_SYSKEYDOWN) => {
                 if let Some(key) = get_key(wparam) {
-                    self.events.lock().push(Event::Key {
+                    let lock = &mut *self.events.lock();
+                    if key == Key::Space {
+                        lock.push(Event::Text(String::from(" ")));
+                    }
+                    lock.push(Event::Key {
                         key,
                         pressed: true,
                         modifiers: Modifiers {
@@ -193,7 +197,7 @@ fn get_key(wparam: usize) -> Option<Key> {
             VK_INSERT => Some(Key::Insert),
             VK_DELETE => Some(Key::Delete),
             VK_HOME => Some(Key::Home),
-            VK_END => Some(Key::Home),
+            VK_END => Some(Key::End),
             VK_PRIOR => Some(Key::PageUp),
             VK_NEXT => Some(Key::PageDown),
             _ => None,
