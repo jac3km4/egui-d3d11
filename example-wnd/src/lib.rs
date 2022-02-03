@@ -2,7 +2,7 @@
 
 use std::intrinsics::transmute;
 
-use egui::{Color32, CtxRef, Pos2, Rect, RichText, Stroke};
+use egui::{Color32, CtxRef, Pos2, Rect, RichText, ScrollArea, Stroke};
 use egui_d3d11::DirectX11App;
 use radon::{internal::alloc_console, pattern::Pattern};
 use windows::{
@@ -120,6 +120,11 @@ fn ui(ctx: &CtxRef) {
         unsafe {
             ui.checkbox(&mut UI_CHECK, "Some checkbox");
             ui.text_edit_singleline(TEXT.as_mut().unwrap());
+            ScrollArea::vertical().max_height(200.).show(ui, |ui| {
+                for i in 1..=1000 {
+                    ui.label(format!("Label: {}", i));
+                }
+            });
         }
 
         ui.label(format!(

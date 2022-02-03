@@ -1,4 +1,4 @@
-use egui::{Event, Key, Modifiers, PointerButton, Pos2, RawInput, Rect};
+use egui::{Event, Key, Modifiers, PointerButton, Pos2, RawInput, Rect, Vec2};
 use parking_lot::Mutex;
 use windows::Win32::{
     Foundation::{HWND, RECT},
@@ -12,11 +12,13 @@ use windows::Win32::{
         WindowsAndMessaging::{
             GetClientRect, MK_CONTROL, MK_SHIFT, WM_CHAR, WM_KEYDOWN, WM_KEYUP, WM_LBUTTONDBLCLK,
             WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MBUTTONDBLCLK, WM_MBUTTONDOWN, WM_MBUTTONUP,
-            WM_MOUSEMOVE, WM_RBUTTONDBLCLK, WM_RBUTTONDOWN, WM_RBUTTONUP, WM_SYSKEYDOWN,
-            WM_SYSKEYUP,
+            WM_MOUSEMOVE, WM_MOUSEWHEEL, WM_RBUTTONDBLCLK, WM_RBUTTONDOWN, WM_RBUTTONUP,
+            WM_SYSKEYDOWN, WM_SYSKEYUP, WM_MOUSEHWHEEL, WHEEL_DELTA,
         },
     },
 };
+
+const SCROLL_DELTA: f32 = WHEEL_DELTA as f32 * 1500.;
 
 pub struct InputCollector {
     hwnd: HWND,
@@ -80,7 +82,23 @@ impl InputCollector {
                         self.events.lock().push(Event::Text(ch.into()));
                     }
                 }
-            }
+            },
+            WM_MOUSEWHEEL => {
+                self.events.lock().push(Event::Scroll(
+                    Vec2::new(
+                        0.,
+                        wparam as i32 as f32 / SCROLL_DELTA
+                    )
+                ));
+            },
+            WM_MOUSEHWHEEL => {
+                self.events.lock().push(Event::Scroll(
+                    Vec2::new(
+                        wparam as i32 as f32 / SCROLL_DELTA,
+                        0.,
+                    )
+                ));
+            },
             msg @ (WM_KEYDOWN | WM_SYSKEYDOWN) => {
                 if let Some(key) = get_key(wparam) {
                     let lock = &mut *self.events.lock();
@@ -93,7 +111,7 @@ impl InputCollector {
                         modifiers: get_key_modifiers(msg),
                     });
                 }
-            }
+            },
             msg @ (WM_KEYUP | WM_SYSKEYUP) => {
                 if let Some(key) = get_key(wparam) {
                     self.events.lock().push(Event::Key {
@@ -102,7 +120,7 @@ impl InputCollector {
                         modifiers: get_key_modifiers(msg),
                     });
                 }
-            }
+            },
             _ => {}
         }
     }

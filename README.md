@@ -7,7 +7,7 @@ Currently many features from egui are missing. WIP.
 - [x] Mesh rendering
 - [x] Mouse input
 - [x] Keyboard input
-- [ ] Scroll support
+- [x] Scroll support
 - [ ] Scissor rects clipping
 - [ ] Other image textures
 - [ ] Drag & Drop support
