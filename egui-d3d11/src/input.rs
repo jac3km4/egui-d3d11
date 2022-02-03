@@ -72,8 +72,6 @@ impl InputCollector {
                 pressed: false,
                 modifiers: get_modifiers(wparam),
             }),
-            // TODO: Replace with WM_UNICHAR instead.
-            // Didn't fixed immediatelly because idk why I am not receiving any of those events.
             // TODO: Decide if adding `WM_SYSCHAR` is necessary.
             WM_CHAR /* | WM_SYSCHAR */ => {
                 if let Some(ch) = char::from_u32(wparam as _) {
