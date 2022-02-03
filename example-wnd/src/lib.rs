@@ -104,17 +104,7 @@ fn ui(ctx: &CtxRef) {
     static mut UI_CHECK: bool = true;
 
     egui::containers::Window::new("Main menu").show(ctx, |ui| {
-        ui.label(RichText::new("Test").color(Color32::BLACK));
-        ui.label(RichText::new("Other").color(Color32::WHITE));
-        ui.separator();
-
-        ui.label(RichText::new("Label").color(Color32::LIGHT_RED));
-
-        unsafe {
-            ui.checkbox(&mut UI_CHECK, "Some checkbox");
-        }
-
-        ui.button("You can't click me yet");
+        ui.input().clone().ui(ui);
     });
 
     ctx.debug_painter().rect(
