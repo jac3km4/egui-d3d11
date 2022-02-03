@@ -5,7 +5,8 @@ use windows::Win32::{
     System::WindowsProgramming::NtQuerySystemTime,
     UI::WindowsAndMessaging::{
         GetClientRect, MK_CONTROL, MK_SHIFT, WM_LBUTTONDBLCLK, WM_LBUTTONDOWN, WM_LBUTTONUP,
-        WM_MOUSEMOVE,
+        WM_MBUTTONDBLCLK, WM_MBUTTONDOWN, WM_MBUTTONUP, WM_MOUSEMOVE, WM_RBUTTONDBLCLK,
+        WM_RBUTTONDOWN, WM_RBUTTONUP,
     },
 };
 
@@ -37,6 +38,30 @@ impl InputCollector {
             WM_LBUTTONUP => self.events.lock().push(Event::PointerButton {
                 pos: get_pos(lparam),
                 button: PointerButton::Primary,
+                pressed: false,
+                modifiers: get_modifiers(wparam),
+            }),
+            WM_RBUTTONDOWN | WM_RBUTTONDBLCLK => self.events.lock().push(Event::PointerButton {
+                pos: get_pos(lparam),
+                button: PointerButton::Secondary,
+                pressed: true,
+                modifiers: get_modifiers(wparam),
+            }),
+            WM_RBUTTONUP => self.events.lock().push(Event::PointerButton {
+                pos: get_pos(lparam),
+                button: PointerButton::Secondary,
+                pressed: false,
+                modifiers: get_modifiers(wparam),
+            }),
+            WM_MBUTTONDOWN | WM_MBUTTONDBLCLK => self.events.lock().push(Event::PointerButton {
+                pos: get_pos(lparam),
+                button: PointerButton::Middle,
+                pressed: true,
+                modifiers: get_modifiers(wparam),
+            }),
+            WM_MBUTTONUP => self.events.lock().push(Event::PointerButton {
+                pos: get_pos(lparam),
+                button: PointerButton::Middle,
                 pressed: false,
                 modifiers: get_modifiers(wparam),
             }),
