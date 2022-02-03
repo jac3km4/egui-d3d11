@@ -5,8 +5,9 @@ use windows::Win32::{
     System::WindowsProgramming::NtQuerySystemTime,
     UI::{
         Input::KeyboardAndMouse::{
-            VK_BACK, VK_DELETE, VK_DOWN, VK_END, VK_ESCAPE, VK_HOME, VK_INSERT, VK_LEFT, VK_NEXT,
-            VK_PRIOR, VK_RETURN, VK_RIGHT, VK_SPACE, VK_TAB, VK_UP,
+            GetAsyncKeyState, VK_BACK, VK_CONTROL, VK_DELETE, VK_DOWN, VK_END, VK_ESCAPE, VK_HOME,
+            VK_INSERT, VK_LEFT, VK_LSHIFT, VK_NEXT, VK_PRIOR, VK_RETURN, VK_RIGHT, VK_SPACE,
+            VK_TAB, VK_UP,
         },
         WindowsAndMessaging::{
             GetClientRect, MK_CONTROL, MK_SHIFT, WM_CHAR, WM_KEYDOWN, WM_KEYUP, WM_LBUTTONDBLCLK,
@@ -89,10 +90,7 @@ impl InputCollector {
                     lock.push(Event::Key {
                         key,
                         pressed: true,
-                        modifiers: Modifiers {
-                            alt: msg == WM_SYSKEYDOWN,
-                            ..Default::default()
-                        },
+                        modifiers: get_key_modifiers(msg),
                     });
                 }
             }
@@ -101,10 +99,7 @@ impl InputCollector {
                     self.events.lock().push(Event::Key {
                         key,
                         pressed: false,
-                        modifiers: Modifiers {
-                            alt: msg == WM_SYSKEYDOWN,
-                            ..Default::default()
-                        },
+                        modifiers: get_key_modifiers(msg),
                     });
                 }
             }
@@ -176,8 +171,22 @@ fn get_modifiers(wparam: usize) -> Modifiers {
         ctrl: (wparam & MK_CONTROL as usize) != 0,
         shift: (wparam & MK_SHIFT as usize) != 0,
         mac_cmd: false,
-        command: false,
+        command: (wparam & MK_CONTROL as usize) != 0,
     }
+}
+
+fn get_key_modifiers(msg: u32) -> Modifiers {
+    let ctrl = unsafe { GetAsyncKeyState(VK_CONTROL as _) != 0 };
+    let shift = unsafe { GetAsyncKeyState(VK_LSHIFT as _) != 0 };
+
+    let m = Modifiers {
+        alt: msg == WM_SYSKEYDOWN,
+        mac_cmd: false,
+        command: ctrl,
+        shift,
+        ctrl,
+    };
+    m
 }
 
 fn get_key(wparam: usize) -> Option<Key> {
