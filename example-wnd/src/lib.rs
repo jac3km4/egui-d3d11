@@ -102,9 +102,28 @@ unsafe extern "stdcall" fn hk_wnd_proc(
 
 fn ui(ctx: &CtxRef) {
     static mut UI_CHECK: bool = true;
+    static mut TEXT: Option<String> = None;
+
+    unsafe {
+        if TEXT.is_none() {
+            TEXT = Some(String::from("Test"));
+        }
+    }
 
     egui::containers::Window::new("Main menu").show(ctx, |ui| {
-        ui.input().clone().ui(ui);
+        ui.label(RichText::new("Test").color(Color32::BLACK));
+        ui.label(RichText::new("Other").color(Color32::WHITE));
+        ui.separator();
+
+        ui.label(RichText::new("Label").color(Color32::LIGHT_RED));
+
+        unsafe {
+            ui.checkbox(&mut UI_CHECK, "Some checkbox");
+            ui.text_edit_singleline(TEXT.as_mut().unwrap());
+        }
+
+        ui.label(format!("{:?}", &ui.input().pointer.button_down(egui::PointerButton::Primary)));
+        ui.button("You can't click me yet");
     });
 
     ctx.debug_painter().rect(

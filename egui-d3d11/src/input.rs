@@ -6,7 +6,7 @@ use windows::Win32::{
     UI::WindowsAndMessaging::{
         GetClientRect, MK_CONTROL, MK_SHIFT, WM_LBUTTONDBLCLK, WM_LBUTTONDOWN, WM_LBUTTONUP,
         WM_MBUTTONDBLCLK, WM_MBUTTONDOWN, WM_MBUTTONUP, WM_MOUSEMOVE, WM_RBUTTONDBLCLK,
-        WM_RBUTTONDOWN, WM_RBUTTONUP,
+        WM_RBUTTONDOWN, WM_RBUTTONUP, WM_CHAR,
     },
 };
 
@@ -65,6 +65,13 @@ impl InputCollector {
                 pressed: false,
                 modifiers: get_modifiers(wparam),
             }),
+            // TODO: Use WM_UNICHAR instead.
+            // Didn't fixed immediatelly because idk why I am not receiving any of those events.
+            WM_CHAR => {
+                if let Some(ch) = char::from_u32(wparam as _) {
+                    self.events.lock().push(Event::Text(ch.into()));
+                }
+            }
             _ => {}
         }
     }
