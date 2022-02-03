@@ -74,7 +74,8 @@ impl InputCollector {
             }),
             // TODO: Replace with WM_UNICHAR instead.
             // Didn't fixed immediatelly because idk why I am not receiving any of those events.
-            WM_CHAR => {
+            // TODO: Decide if adding `WM_SYSCHAR` is necessary.
+            WM_CHAR /* | WM_SYSCHAR */ => {
                 if let Some(ch) = char::from_u32(wparam as _) {
                     if ch.is_alphanumeric() {
                         self.events.lock().push(Event::Text(ch.into()));
@@ -200,11 +201,4 @@ fn get_key(wparam: usize) -> Option<Key> {
             _ => None,
         },
     }
-}
-
-#[test]
-fn test() {
-    println!("{:?}", std::mem::discriminant(&Key::Num0));
-    println!("{:X}", 0x30 - 15);
-    println!("{:?}", get_key(0x36));
 }

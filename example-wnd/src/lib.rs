@@ -52,7 +52,7 @@ unsafe extern "stdcall" fn hk_present(
         if desc.OutputWindow.is_invalid() {
             panic!("Invalid window handle.");
         }
-        eprintln!("{}", desc.BufferDesc.Format);
+        eprintln!("Buffer fmt: {}", desc.BufferDesc.Format);
 
         OLD_WND_PROC = Some(transmute(SetWindowLongPtrA(
             desc.OutputWindow,
@@ -93,6 +93,10 @@ unsafe extern "stdcall" fn hk_wnd_proc(
     wparam: WPARAM,
     lparam: LPARAM,
 ) -> LRESULT {
+    if msg == 0x0102 {
+        println!("{:X}", wparam.0);
+    }
+
     if APP.as_ref().unwrap().wnd_proc(hwnd, msg, wparam, lparam) {
         CallWindowProcW(OLD_WND_PROC.unwrap(), hwnd, msg, wparam, lparam)
     } else {
