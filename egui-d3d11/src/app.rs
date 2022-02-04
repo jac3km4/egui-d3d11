@@ -23,7 +23,7 @@ use windows::{
             },
             Dxgi::{
                 Common::{
-                    DXGI_FORMAT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R32G32_FLOAT,
+                    DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R32G32_FLOAT,
                     DXGI_FORMAT_R32_UINT,
                 },
                 IDXGISwapChain,
@@ -40,9 +40,6 @@ use crate::{
     shader::CompiledShaders,
     texture::TextureAllocator,
 };
-
-type FnResizeBuffers =
-    unsafe extern "stdcall" fn(IDXGISwapChain, u32, u32, u32, DXGI_FORMAT, u32) -> HRESULT;
 
 /// Heart and soul of this integration.
 /// Main methods you are going to use are:
@@ -399,30 +396,18 @@ impl<T> DirectX11App<T> {
     }
 
     /// Call when resizing buffers.
-    /// Do not call the original function, instead pass pointer to it as an argument to this function.
+    /// Do not call the original function before it, instead call it inside of the `original` closure.
     #[allow(clippy::too_many_arguments)]
     pub fn resize_buffers(
         &self,
         swap_chain: &IDXGISwapChain,
-        buffer_count: u32,
-        width: u32,
-        height: u32,
-        new_format: DXGI_FORMAT,
-        swap_chain_flags: u32,
-        original: FnResizeBuffers,
+        original: impl FnOnce() -> HRESULT,
     ) -> HRESULT {
         unsafe {
             let view_lock = &mut *self.render_view.lock();
             std::ptr::drop_in_place(view_lock);
 
-            let result = original(
-                swap_chain.clone(),
-                buffer_count,
-                width,
-                height,
-                new_format,
-                swap_chain_flags,
-            );
+            let result = original();
 
             let backbuffer: ID3D11Texture2D = expect!(
                 swap_chain.GetBuffer(0),

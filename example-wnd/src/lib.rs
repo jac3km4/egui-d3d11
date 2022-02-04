@@ -77,12 +77,14 @@ unsafe extern "stdcall" fn hk_resize_buffers(
 ) -> HRESULT {
     APP.as_ref().unwrap().resize_buffers(
         &swap_chain,
-        buffer_count,
-        width,
-        height,
-        new_format,
-        swap_chain_flags,
-        O_RESIZE_BUFFERS.unwrap(),
+        || O_RESIZE_BUFFERS.as_ref().unwrap()(
+            swap_chain.clone(),
+            buffer_count,
+            width,
+            height,
+            new_format,
+            swap_chain_flags
+        )
     )
 }
 
