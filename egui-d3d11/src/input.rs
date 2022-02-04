@@ -7,14 +7,8 @@ use windows::Win32::{
         Input::KeyboardAndMouse::{
             GetAsyncKeyState, VK_BACK, VK_CONTROL, VK_DELETE, VK_DOWN, VK_END, VK_ESCAPE, VK_HOME,
             VK_INSERT, VK_LEFT, VK_LSHIFT, VK_NEXT, VK_PRIOR, VK_RETURN, VK_RIGHT, VK_SPACE,
-            VK_TAB, VK_UP,
-        },
-        WindowsAndMessaging::{
-            GetClientRect, MK_CONTROL, MK_SHIFT, WM_CHAR, WM_KEYDOWN, WM_KEYUP, WM_LBUTTONDBLCLK,
-            WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MBUTTONDBLCLK, WM_MBUTTONDOWN, WM_MBUTTONUP,
-            WM_MOUSEMOVE, WM_MOUSEWHEEL, WM_RBUTTONDBLCLK, WM_RBUTTONDOWN, WM_RBUTTONUP,
-            WM_SYSKEYDOWN, WM_SYSKEYUP, WM_MOUSEHWHEEL, WHEEL_DELTA,
-        },
+            VK_TAB, VK_UP, VIRTUAL_KEY,
+        }, WindowsAndMessaging::{WHEEL_DELTA, WM_LBUTTONDOWN, WM_MOUSEMOVE, WM_LBUTTONDBLCLK, WM_LBUTTONUP, WM_RBUTTONDOWN, WM_RBUTTONDBLCLK, WM_RBUTTONUP, WM_MBUTTONDOWN, WM_MBUTTONDBLCLK, WM_MBUTTONUP, WM_CHAR, WM_MOUSEWHEEL, WM_MOUSEHWHEEL, WM_KEYDOWN, WM_SYSKEYDOWN, WM_SYSKEYUP, WM_KEYUP, GetClientRect, MK_SHIFT, MK_CONTROL},
     },
 };
 
@@ -194,8 +188,8 @@ fn get_modifiers(wparam: usize) -> Modifiers {
 }
 
 fn get_key_modifiers(msg: u32) -> Modifiers {
-    let ctrl = unsafe { GetAsyncKeyState(VK_CONTROL as _) != 0 };
-    let shift = unsafe { GetAsyncKeyState(VK_LSHIFT as _) != 0 };
+    let ctrl = unsafe { GetAsyncKeyState(VK_CONTROL.0 as _) != 0 };
+    let shift = unsafe { GetAsyncKeyState(VK_LSHIFT.0 as _) != 0 };
 
     let m = Modifiers {
         alt: msg == WM_SYSKEYDOWN,
@@ -211,7 +205,7 @@ fn get_key(wparam: usize) -> Option<Key> {
     match wparam {
         0x30..=0x39 => unsafe { Some(std::mem::transmute::<_, Key>(wparam as u8 - 0x21)) },
         0x41..=0x5A => unsafe { Some(std::mem::transmute::<_, Key>(wparam as u8 - 0x28)) },
-        _ => match wparam as u16 {
+        _ => match VIRTUAL_KEY(wparam as u16) {
             VK_DOWN => Some(Key::ArrowDown),
             VK_LEFT => Some(Key::ArrowLeft),
             VK_RIGHT => Some(Key::ArrowRight),

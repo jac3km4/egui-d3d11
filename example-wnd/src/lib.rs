@@ -51,7 +51,7 @@ unsafe extern "stdcall" fn hk_present(
         if desc.OutputWindow.is_invalid() {
             panic!("Invalid window handle.");
         }
-        eprintln!("Buffer fmt: {}", desc.BufferDesc.Format);
+        eprintln!("Buffer fmt: {}", desc.BufferDesc.Format.0);
 
         OLD_WND_PROC = Some(transmute(SetWindowLongPtrA(
             desc.OutputWindow,

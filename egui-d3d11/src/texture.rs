@@ -5,7 +5,7 @@ use windows::Win32::Graphics::{
     Direct3D11::{
         ID3D11Device, ID3D11ShaderResourceView, D3D11_BIND_SHADER_RESOURCE,
         D3D11_SHADER_RESOURCE_VIEW_DESC, D3D11_SHADER_RESOURCE_VIEW_DESC_0, D3D11_SUBRESOURCE_DATA,
-        D3D11_TEX2D_SRV, D3D11_TEXTURE2D_DESC, D3D11_USAGE_DEFAULT,
+        D3D11_TEX2D_SRV, D3D11_TEXTURE2D_DESC, D3D11_USAGE_DEFAULT, D3D11_CPU_ACCESS_FLAG, D3D11_RESOURCE_MISC_FLAG,
     },
     Dxgi::Common::{DXGI_FORMAT_R8_UNORM, DXGI_SAMPLE_DESC},
 };
@@ -38,8 +38,8 @@ impl TextureAllocator {
             },
             Usage: D3D11_USAGE_DEFAULT,
             BindFlags: D3D11_BIND_SHADER_RESOURCE,
-            CPUAccessFlags: 0,
-            MiscFlags: 0,
+            CPUAccessFlags: D3D11_CPU_ACCESS_FLAG(0),
+            MiscFlags: D3D11_RESOURCE_MISC_FLAG(0),
         };
 
         let init_data = D3D11_SUBRESOURCE_DATA {

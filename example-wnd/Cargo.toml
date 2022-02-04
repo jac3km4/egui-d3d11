@@ -23,7 +23,7 @@ git = "https://github.com/sy1ntexx/sunshine"
 git = "https://github.com/sy1ntexx/radon"
 
 [dependencies.windows]
-version = "0.30.0"
+version = "0.32.0"
 features = [
     "Win32_UI_WindowsAndMessaging",
     "Win32_Graphics_Dxgi_Common",

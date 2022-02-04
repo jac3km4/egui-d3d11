@@ -28,8 +28,7 @@ use windows::{
                 },
                 IDXGISwapChain,
             },
-        },
-        UI::WindowsAndMessaging::GetClientRect,
+        }, UI::WindowsAndMessaging::GetClientRect,
     },
 };
 
@@ -171,7 +170,7 @@ impl<T> DirectX11App<T> {
             targets[0].SrcBlendAlpha = D3D11_BLEND_ONE;
             targets[0].DestBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA;
             targets[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
-            targets[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL as _;
+            targets[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL.0 as _;
 
             let blend_desc = D3D11_BLEND_DESC {
                 AlphaToCoverageEnable: false.into(),

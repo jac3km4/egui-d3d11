@@ -63,7 +63,7 @@ impl MeshBuffers {
         let buffer_desc = D3D11_BUFFER_DESC {
             ByteWidth: (mesh.vertices.len() * size_of::<GpuVertex>()) as _,
             Usage: D3D11_USAGE_DEFAULT,
-            BindFlags: D3D11_BIND_VERTEX_BUFFER,
+            BindFlags: D3D11_BIND_VERTEX_BUFFER.0,
             CPUAccessFlags: 0,
             MiscFlags: 0,
             StructureByteStride: 0,
@@ -87,7 +87,7 @@ impl MeshBuffers {
         let buffer_desc = D3D11_BUFFER_DESC {
             ByteWidth: (mesh.indices.len() * size_of::<u32>()) as _,
             Usage: D3D11_USAGE_DEFAULT,
-            BindFlags: D3D11_BIND_INDEX_BUFFER,
+            BindFlags: D3D11_BIND_INDEX_BUFFER.0,
             CPUAccessFlags: 0,
             MiscFlags: 0,
             StructureByteStride: 0,
