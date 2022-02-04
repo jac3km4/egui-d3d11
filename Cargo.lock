@@ -101,9 +101,9 @@ dependencies = [
 
 [[package]]
 name = "faithe"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cadf53802a2af08e26de37198cfde76f0d956718b2afd7085465e07aacb4250f"
+checksum = "955b92d0cba282eddbd20c1b1b028c24fbfa636bc758c81c3bfba52878dff9dc"
 dependencies = [
  "thiserror",
  "windows",
