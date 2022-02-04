@@ -1,6 +1,6 @@
 [package]
 name = "egui-d3d11"
-version = "0.2.1"
+version = "0.3.0"
 edition = "2021"
 authors = ["sy1ntexx"]
 description = "D3D11 backend for egui library."
