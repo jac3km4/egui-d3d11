@@ -352,7 +352,7 @@ where
         let input = self.input_collector.collect_input();
 
         let (output, shapes) = ctx_lock.run(input, |u| (self.ui)(u, &mut *self.state.lock()));
-        if output.copied_text.len() > 0 {
+        if !output.copied_text.is_empty() {
             // TODO: Do clipboard pasting.
         }
 

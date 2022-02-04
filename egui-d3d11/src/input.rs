@@ -221,14 +221,13 @@ fn get_key_modifiers(msg: u32) -> Modifiers {
     let ctrl = unsafe { GetAsyncKeyState(VK_CONTROL.0 as _) != 0 };
     let shift = unsafe { GetAsyncKeyState(VK_LSHIFT.0 as _) != 0 };
 
-    let m = Modifiers {
+    Modifiers {
         alt: msg == WM_SYSKEYDOWN,
         mac_cmd: false,
         command: ctrl,
         shift,
         ctrl,
-    };
-    m
+    }
 }
 
 fn get_key(wparam: usize) -> Option<Key> {

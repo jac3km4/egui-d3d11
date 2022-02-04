@@ -7,6 +7,10 @@ description = "D3D11 backend for egui library."
 repository = "https://github.com/sy1ntexx/egui-d3d11"
 license = "MIT"
 
+[package.metadata.docs.rs]
+default-target = "x86_64-pc-windows-msvc"
+targets = ["i686-pc-windows-msvc", "x86_64-pc-windows-msvc"]
+
 [dependencies]
 parking_lot = "0.11.2"
 thiserror = "1.0.0"
