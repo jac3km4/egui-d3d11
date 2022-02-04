@@ -10,6 +10,7 @@ license = "MIT"
 crate-type = ["cdylib"]
 
 [dependencies]
+faithe = "0.3.0"
 egui = "0.16.1"
 libc = "0.2.112"
 
@@ -18,9 +19,6 @@ path = "../egui-d3d11"
 
 [dependencies.sunshine]
 git = "https://github.com/sy1ntexx/sunshine"
-
-[dependencies.radon]
-git = "https://github.com/sy1ntexx/radon"
 
 [dependencies.windows]
 version = "0.32.0"

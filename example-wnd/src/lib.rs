@@ -3,7 +3,7 @@
 use std::intrinsics::transmute;
 use egui::{Color32, CtxRef, Pos2, Rect, RichText, ScrollArea, Stroke};
 use egui_d3d11::DirectX11App;
-use radon::{internal::alloc_console, pattern::Pattern};
+use faithe::{internal::alloc_console, pattern::Pattern};
 use windows::{
     core::HRESULT,
     Win32::{
@@ -162,12 +162,12 @@ unsafe fn main_thread(_hinst: usize) {
 
     eprintln!("Hello World!");
 
-    let present = radon::internal::find_pattern(
+    let present = faithe::internal::find_pattern(
         "gameoverlayrenderer64.dll",
         Pattern::from_ida_style("48 89 6C 24 18 48 89 74 24 20 41 56 48 83 EC 20 41"),
     )
     .unwrap_or_else(|_| {
-        radon::internal::find_pattern(
+        faithe::internal::find_pattern(
             "dxgi.dll",
             Pattern::from_ida_style("48 89 5C 24 10 48 89 74 24 20 55 57 41 56"),
         )
@@ -177,14 +177,14 @@ unsafe fn main_thread(_hinst: usize) {
 
     eprintln!("Present: {:X}", present);
 
-    let swap_buffers = radon::internal::find_pattern(
+    let swap_buffers = faithe::internal::find_pattern(
         "gameoverlayrenderer64.dll",
         Pattern::from_ida_style(
             "48 89 5C 24 08 48 89 6C 24 10 48 89 74 24 18 57 41 56 41 57 48 83 EC 30 44",
         ),
     )
     .unwrap_or_else(|_| {
-        radon::internal::find_pattern(
+        faithe::internal::find_pattern(
             "dxgi.dll",
             Pattern::from_ida_style("48 8B C4 55 41 54 41 55 41 56 41 57 48 8D 68 B1 48 81 EC C0"),
         )
