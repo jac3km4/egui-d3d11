@@ -1,7 +1,6 @@
 #![allow(unused)]
 
 use std::intrinsics::transmute;
-
 use egui::{Color32, CtxRef, Pos2, Rect, RichText, ScrollArea, Stroke};
 use egui_d3d11::DirectX11App;
 use radon::{internal::alloc_console, pattern::Pattern};
@@ -26,7 +25,7 @@ unsafe extern "stdcall" fn DllMain(hinst: usize, reason: u32) -> i32 {
     1
 }
 
-static mut APP: Option<DirectX11App> = None;
+static mut APP: Option<DirectX11App<i32>> = None;
 static mut OLD_WND_PROC: Option<WNDPROC> = None;
 
 type FnPresent = unsafe extern "stdcall" fn(IDXGISwapChain, u32, u32) -> HRESULT;
@@ -100,7 +99,7 @@ unsafe extern "stdcall" fn hk_wnd_proc(
     }
 }
 
-fn ui(ctx: &CtxRef) {
+fn ui(ctx: &CtxRef, i: &mut i32) {
     static mut UI_CHECK: bool = true;
     static mut TEXT: Option<String> = None;
 
@@ -115,7 +114,7 @@ fn ui(ctx: &CtxRef) {
         ui.label(RichText::new("Other").color(Color32::WHITE));
         ui.separator();
 
-        ui.label(RichText::new("Label").color(Color32::LIGHT_RED));
+        ui.label(RichText::new(format!("I: {}", *i)).color(Color32::LIGHT_RED));
 
         unsafe {
             ui.checkbox(&mut UI_CHECK, "Some checkbox");
@@ -131,7 +130,9 @@ fn ui(ctx: &CtxRef) {
             "{:?}",
             &ui.input().pointer.button_down(egui::PointerButton::Primary)
         ));
-        ui.button("You can't click me yet");
+        if ui.button("You can't click me yet").clicked() {
+            *i += 1;
+        }
     });
 
     egui::Window::new("Debug").show(ctx, |ui| {

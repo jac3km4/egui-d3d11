@@ -1,5 +1,5 @@
 use egui::{CtxRef, Pos2, TextureId};
-use parking_lot::Mutex;
+use parking_lot::{Mutex, MutexGuard};
 use std::{
     intrinsics::transmute,
     mem::{size_of, zeroed},
@@ -45,20 +45,21 @@ type FnResizeBuffers =
     unsafe extern "stdcall" fn(IDXGISwapChain, u32, u32, u32, DXGI_FORMAT, u32) -> HRESULT;
 
 #[allow(unused)]
-pub struct DirectX11App {
+pub struct DirectX11App<T = ()> {
     render_view: Mutex<ID3D11RenderTargetView>,
+    input_collector: InputCollector,
     input_layout: ID3D11InputLayout,
     tex_alloc: TextureAllocator,
     sampler: ID3D11SamplerState,
     shaders: CompiledShaders,
-    input_collector: InputCollector,
+    ui: fn(&CtxRef, &mut T),
     backup: BackupState,
     ctx: Mutex<CtxRef>,
-    ui: fn(&CtxRef),
+    state: Mutex<T>,
     hwnd: HWND,
 }
 
-impl DirectX11App {
+impl<T> DirectX11App<T> {
     #[inline]
     fn get_screen_size(&self) -> Pos2 {
         let mut rect = RECT::default();
@@ -284,8 +285,15 @@ impl DirectX11App {
     }
 }
 
-impl DirectX11App {
-    pub fn new(ui: fn(&CtxRef), swap_chain: &IDXGISwapChain, device: &ID3D11Device) -> Self {
+impl<T> DirectX11App<T>
+where
+    T: Default
+{
+    pub fn state(&self) -> MutexGuard<T> {
+        self.state.lock()
+    }
+
+    pub fn new(ui: fn(&CtxRef, &mut T), swap_chain: &IDXGISwapChain, device: &ID3D11Device) -> Self {
         unsafe {
             let hwnd = expect!(
                 swap_chain.GetDesc(),
@@ -320,6 +328,7 @@ impl DirectX11App {
                 render_view: Mutex::new(render_view),
                 ctx: Mutex::new(CtxRef::default()),
                 tex_alloc: TextureAllocator::default(),
+                state: Mutex::new(T::default()),
                 backup: BackupState::default(),
                 shaders,
                 hwnd,
@@ -335,7 +344,10 @@ impl DirectX11App {
 
         let input = self.input_collector.collect_input();
 
-        let (_output, shapes) = ctx_lock.run(input, self.ui);
+        let (_output, shapes) = ctx_lock.run(
+            input,
+            |u| (self.ui)(u, &mut *self.state.lock())
+        );
         self.tex_alloc
             .update_font_if_needed(&device, &*ctx_lock.font_image());
         let meshes = convert_meshes(ctx_lock.tessellate(shapes));
