@@ -12,8 +12,6 @@ use windows::Win32::{
     },
 };
 
-const SCROLL_DELTA: f32 = WHEEL_DELTA as f32 * 1500.;
-
 pub struct InputCollector {
     hwnd: HWND,
     events: Mutex<Vec<Event>>,
@@ -78,20 +76,30 @@ impl InputCollector {
                 }
             },
             WM_MOUSEWHEEL => {
-                self.events.lock().push(Event::Scroll(
-                    Vec2::new(
-                        0.,
-                        wparam as i32 as f32 / SCROLL_DELTA
-                    )
-                ));
+                let delta = (wparam >> 16) as i16 as f32 * 10. / WHEEL_DELTA as f32;
+
+                if wparam & MK_CONTROL as usize != 0 {
+                    self.events.lock().push(Event::Zoom(
+                        if delta > 0. { 1.5 } else { 0.5 }
+                    ));
+                } else {
+                    self.events.lock().push(Event::Scroll(
+                        Vec2::new(0., delta)
+                    ));
+                }
             },
             WM_MOUSEHWHEEL => {
-                self.events.lock().push(Event::Scroll(
-                    Vec2::new(
-                        wparam as i32 as f32 / SCROLL_DELTA,
-                        0.,
-                    )
-                ));
+                let delta = (wparam >> 16) as i16 as f32 * 10. / WHEEL_DELTA as f32;
+                
+                if wparam & MK_CONTROL as usize != 0 {
+                    self.events.lock().push(Event::Zoom(
+                        if delta > 0. { 1.5 } else { 0.5 }
+                    ));
+                } else {
+                    self.events.lock().push(Event::Scroll(
+                        Vec2::new(delta, 0.)
+                    ));
+                }
             },
             msg @ (WM_KEYDOWN | WM_SYSKEYDOWN) => {
                 if let Some(key) = get_key(wparam) {
