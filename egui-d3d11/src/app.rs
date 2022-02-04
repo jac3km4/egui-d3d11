@@ -298,9 +298,8 @@ where
     pub fn new_with_default(
         ui: impl FnMut(&CtxRef, &mut T) + 'static,
         swap_chain: &IDXGISwapChain,
-        device: &ID3D11Device,
     ) -> Self {
-        Self::new_with_state(ui, swap_chain, device, T::default())
+        Self::new_with_state(ui, swap_chain, T::default())
     }
 }
 
@@ -315,17 +314,15 @@ impl<T> DirectX11App<T> {
     pub fn new_with(
         ui: impl FnMut(&CtxRef, &mut T) + 'static,
         swap_chain: &IDXGISwapChain,
-        device: &ID3D11Device,
         state: impl FnOnce() -> T,
     ) -> Self {
-        Self::new_with_state(ui, swap_chain, device, state())
+        Self::new_with_state(ui, swap_chain, state())
     }
 
     /// Creates new app with explicit state value.
     pub fn new_with_state(
         ui: impl FnMut(&CtxRef, &mut T) + 'static,
         swap_chain: &IDXGISwapChain,
-        device: &ID3D11Device,
         state: T,
     ) -> Self {
         unsafe {
@@ -334,6 +331,8 @@ impl<T> DirectX11App<T> {
                 "Failed to get swapchain's descriptor."
             )
             .OutputWindow;
+
+            let (device , _) = get_device_context(swap_chain);
 
             if hwnd.is_invalid() {
                 if !cfg!(feature = "no-msgs") {
@@ -353,11 +352,11 @@ impl<T> DirectX11App<T> {
                 "Failed to create render target view."
             );
 
-            let shaders = CompiledShaders::new(device);
+            let shaders = CompiledShaders::new(&device);
 
             Self {
-                input_layout: Self::create_input_layout(&shaders, device),
-                sampler: Self::create_sampler_state(device),
+                input_layout: Self::create_input_layout(&shaders, &device),
+                sampler: Self::create_sampler_state(&device),
                 input_collector: InputCollector::new(hwnd),
                 render_view: Mutex::new(render_view),
                 ctx: Mutex::new(CtxRef::default()),
@@ -429,17 +428,17 @@ impl<T> DirectX11App<T> {
 
     /// Call on each `WndProc` occurence.
     #[inline]
-    pub fn wnd_proc(&self, _hwnd: HWND, umsg: u32, wparam: WPARAM, lparam: LPARAM) -> bool {
+    pub fn wnd_proc(&self, umsg: u32, wparam: WPARAM, lparam: LPARAM) -> bool {
         self.input_collector.process(umsg, wparam.0, lparam.0);
         true
     }
 }
 
 #[inline]
-fn get_device_context(swapchain: &IDXGISwapChain) -> (ID3D11Device, ID3D11DeviceContext) {
+fn get_device_context(swap_chain: &IDXGISwapChain) -> (ID3D11Device, ID3D11DeviceContext) {
     unsafe {
         let device: ID3D11Device =
-            expect!(swapchain.GetDevice(), "Failed to get swapchain's device");
+            expect!(swap_chain.GetDevice(), "Failed to get swapchain's device");
 
         let mut context = None;
         device.GetImmediateContext(&mut context);

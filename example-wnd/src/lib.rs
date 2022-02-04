@@ -41,11 +41,9 @@ unsafe extern "stdcall" fn hk_present(
     flags: u32,
 ) -> HRESULT {
     let device: ID3D11Device = swap_chain.GetDevice().unwrap();
-    let mut context = None;
-    device.GetImmediateContext(&mut context);
-
-    if OLD_WND_PROC.is_none() {
-        APP = Some(DirectX11App::new_with_default(ui, &swap_chain, &device));
+    
+    if APP.is_none() {
+        APP = Some(DirectX11App::new_with_default(ui, &swap_chain));
 
         let desc = swap_chain.GetDesc().unwrap();
         if desc.OutputWindow.is_invalid() {
@@ -94,7 +92,7 @@ unsafe extern "stdcall" fn hk_wnd_proc(
     wparam: WPARAM,
     lparam: LPARAM,
 ) -> LRESULT {
-    if APP.as_ref().unwrap().wnd_proc(hwnd, msg, wparam, lparam) {
+    if APP.as_ref().unwrap().wnd_proc(msg, wparam, lparam) {
         CallWindowProcW(OLD_WND_PROC.unwrap(), hwnd, msg, wparam, lparam)
     } else {
         LRESULT(0)
