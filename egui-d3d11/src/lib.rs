@@ -19,8 +19,10 @@ macro_rules! c_str {
 mod app;
 pub use app::*;
 
-mod backup;
 mod input;
+pub use input::InputResult;
+
+mod backup;
 mod mesh;
 mod shader;
 mod texture;

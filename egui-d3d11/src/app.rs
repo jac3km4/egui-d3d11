@@ -35,7 +35,7 @@ use windows::{
 
 use crate::{
     backup::BackupState,
-    input::InputCollector,
+    input::{InputCollector, InputResult},
     mesh::{convert_meshes, GpuMesh, GpuVertex, MeshBuffers},
     shader::CompiledShaders,
     texture::TextureAllocator,
@@ -430,7 +430,7 @@ impl<T> DirectX11App<T> {
     /// Returns `true` if message was recognized and dispatched by input handler,
     /// `false` otherwise.
     #[inline]
-    pub fn wnd_proc(&self, umsg: u32, wparam: WPARAM, lparam: LPARAM) -> bool {
+    pub fn wnd_proc(&self, umsg: u32, wparam: WPARAM, lparam: LPARAM) -> InputResult {
         self.input_collector.process(umsg, wparam.0, lparam.0)
     }
 }

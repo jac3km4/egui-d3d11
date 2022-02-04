@@ -28,6 +28,32 @@ pub struct InputCollector {
     events: Mutex<Vec<Event>>,
 }
 
+/// High-level overview of recognized `WndProc` messages.
+#[repr(u8)]
+pub enum InputResult {
+    Unknown,
+    MouseMove,
+    MouseLeft,
+    MouseRight,
+    MouseMiddle,
+    Character,
+    Scroll,
+    Zoom,
+    Key
+}
+
+impl InputResult {
+    #[inline]
+    pub fn is_valid(&self) -> bool {
+        !self.is_unknown()
+    }
+    
+    #[inline]
+    pub fn is_unknown(&self) -> bool {
+        matches!(*self, InputResult::Unknown)
+    }
+}
+
 impl InputCollector {
     pub fn new(hwnd: HWND) -> Self {
         Self {
@@ -36,48 +62,69 @@ impl InputCollector {
         }
     }
 
-    pub fn process(&self, umsg: u32, wparam: usize, lparam: isize) -> bool {
+    pub fn process(&self, umsg: u32, wparam: usize, lparam: isize) -> InputResult {
         match umsg {
-            WM_MOUSEMOVE => self
-                .events
-                .lock()
-                .push(Event::PointerMoved(get_pos(lparam))),
-            WM_LBUTTONDOWN | WM_LBUTTONDBLCLK => self.events.lock().push(Event::PointerButton {
-                pos: get_pos(lparam),
-                button: PointerButton::Primary,
-                pressed: true,
-                modifiers: get_modifiers(wparam),
-            }),
-            WM_LBUTTONUP => self.events.lock().push(Event::PointerButton {
-                pos: get_pos(lparam),
-                button: PointerButton::Primary,
-                pressed: false,
-                modifiers: get_modifiers(wparam),
-            }),
-            WM_RBUTTONDOWN | WM_RBUTTONDBLCLK => self.events.lock().push(Event::PointerButton {
-                pos: get_pos(lparam),
-                button: PointerButton::Secondary,
-                pressed: true,
-                modifiers: get_modifiers(wparam),
-            }),
-            WM_RBUTTONUP => self.events.lock().push(Event::PointerButton {
-                pos: get_pos(lparam),
-                button: PointerButton::Secondary,
-                pressed: false,
-                modifiers: get_modifiers(wparam),
-            }),
-            WM_MBUTTONDOWN | WM_MBUTTONDBLCLK => self.events.lock().push(Event::PointerButton {
-                pos: get_pos(lparam),
-                button: PointerButton::Middle,
-                pressed: true,
-                modifiers: get_modifiers(wparam),
-            }),
-            WM_MBUTTONUP => self.events.lock().push(Event::PointerButton {
-                pos: get_pos(lparam),
-                button: PointerButton::Middle,
-                pressed: false,
-                modifiers: get_modifiers(wparam),
-            }),
+            WM_MOUSEMOVE => {
+                self
+                    .events
+                    .lock()
+                    .push(Event::PointerMoved(get_pos(lparam)));
+                InputResult::MouseMove
+            }
+            WM_LBUTTONDOWN | WM_LBUTTONDBLCLK => {
+                self.events.lock().push(Event::PointerButton {
+                    pos: get_pos(lparam),
+                    button: PointerButton::Primary,
+                    pressed: true,
+                    modifiers: get_modifiers(wparam),
+                });
+                InputResult::MouseLeft
+            }
+            WM_LBUTTONUP => {
+                self.events.lock().push(Event::PointerButton {
+                    pos: get_pos(lparam),
+                    button: PointerButton::Primary,
+                    pressed: false,
+                    modifiers: get_modifiers(wparam),
+                });
+                InputResult::MouseLeft
+            }
+            WM_RBUTTONDOWN | WM_RBUTTONDBLCLK => {
+                self.events.lock().push(Event::PointerButton {
+                    pos: get_pos(lparam),
+                    button: PointerButton::Secondary,
+                    pressed: true,
+                    modifiers: get_modifiers(wparam),
+                });
+                InputResult::MouseRight
+            }
+            WM_RBUTTONUP => {
+                self.events.lock().push(Event::PointerButton {
+                    pos: get_pos(lparam),
+                    button: PointerButton::Secondary,
+                    pressed: false,
+                    modifiers: get_modifiers(wparam),
+                });
+                InputResult::MouseRight
+            }
+            WM_MBUTTONDOWN | WM_MBUTTONDBLCLK => {
+                self.events.lock().push(Event::PointerButton {
+                    pos: get_pos(lparam),
+                    button: PointerButton::Middle,
+                    pressed: true,
+                    modifiers: get_modifiers(wparam),
+                });
+                InputResult::MouseMiddle
+            }
+            WM_MBUTTONUP => {
+                self.events.lock().push(Event::PointerButton {
+                    pos: get_pos(lparam),
+                    button: PointerButton::Middle,
+                    pressed: false,
+                    modifiers: get_modifiers(wparam),
+                });
+                InputResult::MouseMiddle
+            }
             // TODO: Decide if adding `WM_SYSCHAR` is necessary.
             WM_CHAR /* | WM_SYSCHAR */ => {
                 if let Some(ch) = char::from_u32(wparam as _) {
@@ -85,6 +132,7 @@ impl InputCollector {
                         self.events.lock().push(Event::Text(ch.into()));
                     }
                 }
+                InputResult::Character
             },
             WM_MOUSEWHEEL => {
                 let delta = (wparam >> 16) as i16 as f32 * 10. / WHEEL_DELTA as f32;
@@ -93,10 +141,12 @@ impl InputCollector {
                     self.events.lock().push(Event::Zoom(
                         if delta > 0. { 1.5 } else { 0.5 }
                     ));
+                    InputResult::Zoom
                 } else {
                     self.events.lock().push(Event::Scroll(
                         Vec2::new(0., delta)
                     ));
+                    InputResult::Scroll
                 }
             },
             WM_MOUSEHWHEEL => {
@@ -106,10 +156,12 @@ impl InputCollector {
                     self.events.lock().push(Event::Zoom(
                         if delta > 0. { 1.5 } else { 0.5 }
                     ));
+                    InputResult::Zoom
                 } else {
                     self.events.lock().push(Event::Scroll(
                         Vec2::new(delta, 0.)
                     ));
+                    InputResult::Scroll
                 }
             },
             msg @ (WM_KEYDOWN | WM_SYSKEYDOWN) => {
@@ -135,6 +187,7 @@ impl InputCollector {
                         });
                     }
                 }
+                InputResult::Key
             },
             msg @ (WM_KEYUP | WM_SYSKEYUP) => {
                 if let Some(key) = get_key(wparam) {
@@ -144,10 +197,10 @@ impl InputCollector {
                         modifiers: get_key_modifiers(msg),
                     });
                 }
+                InputResult::Key
             },
-            _ => { return false; }
-        };
-        true
+            _ => InputResult::Unknown
+        }
     }
 
     pub fn collect_input(&self) -> RawInput {

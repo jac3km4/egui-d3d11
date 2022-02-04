@@ -92,11 +92,9 @@ unsafe extern "stdcall" fn hk_wnd_proc(
     wparam: WPARAM,
     lparam: LPARAM,
 ) -> LRESULT {
-    if APP.as_ref().unwrap().wnd_proc(msg, wparam, lparam) {
-        CallWindowProcW(OLD_WND_PROC.unwrap(), hwnd, msg, wparam, lparam)
-    } else {
-        LRESULT(0)
-    }
+    APP.as_ref().unwrap().wnd_proc(msg, wparam, lparam);
+    
+    CallWindowProcW(OLD_WND_PROC.unwrap(), hwnd, msg, wparam, lparam)
 }
 
 fn ui(ctx: &CtxRef, i: &mut i32) {
