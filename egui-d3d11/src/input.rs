@@ -36,7 +36,7 @@ impl InputCollector {
         }
     }
 
-    pub fn process(&self, umsg: u32, wparam: usize, lparam: isize) {
+    pub fn process(&self, umsg: u32, wparam: usize, lparam: isize) -> bool {
         match umsg {
             WM_MOUSEMOVE => self
                 .events
@@ -145,8 +145,9 @@ impl InputCollector {
                     });
                 }
             },
-            _ => {}
-        }
+            _ => { return false; }
+        };
+        true
     }
 
     pub fn collect_input(&self) -> RawInput {

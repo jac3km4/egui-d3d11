@@ -45,7 +45,7 @@ use crate::{
 /// Main methods you are going to use are:
 /// * [`Self::present`] - Should be called inside of hook are before present.
 /// * [`Self::resize_buffers`] - Should be called **INSTEAD** of swapchain's `ResizeBuffers`.
-/// * [`Self::wnd_proc`] - Should be called on each `WndProc`. return value doesn't mean anything *yet*.
+/// * [`Self::wnd_proc`] - Should be called on each `WndProc`.
 pub struct DirectX11App<T = ()> {
     ui: Box<dyn FnMut(&CtxRef, &mut T) + 'static>,
     render_view: Mutex<ID3D11RenderTargetView>,
@@ -427,10 +427,11 @@ impl<T> DirectX11App<T> {
     }
 
     /// Call on each `WndProc` occurence.
+    /// Returns `true` if message was recognized and dispatched by input handler,
+    /// `false` otherwise.
     #[inline]
     pub fn wnd_proc(&self, umsg: u32, wparam: WPARAM, lparam: LPARAM) -> bool {
-        self.input_collector.process(umsg, wparam.0, lparam.0);
-        true
+        self.input_collector.process(umsg, wparam.0, lparam.0)
     }
 }
 
