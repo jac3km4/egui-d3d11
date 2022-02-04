@@ -292,14 +292,36 @@ impl<T> DirectX11App<T>
 where
     T: Default,
 {
+    #[inline]
+    pub fn new_with_default(
+        ui: fn(&CtxRef, &mut T),
+        swap_chain: &IDXGISwapChain,
+        device: &ID3D11Device,
+    ) -> Self {
+        Self::new_with_state(ui, swap_chain, device, T::default())
+    }
+}
+
+impl<T> DirectX11App<T> {
     pub fn state(&self) -> MutexGuard<T> {
         self.state.lock()
     }
 
-    pub fn new(
+    #[inline]
+    pub fn new_with(
         ui: fn(&CtxRef, &mut T),
         swap_chain: &IDXGISwapChain,
         device: &ID3D11Device,
+        state: impl FnOnce() -> T
+    ) -> Self {
+        Self::new_with_state(ui, swap_chain, device, state())
+    }
+
+    pub fn new_with_state(
+        ui: fn(&CtxRef, &mut T),
+        swap_chain: &IDXGISwapChain,
+        device: &ID3D11Device,
+        state: T,
     ) -> Self {
         unsafe {
             let hwnd = expect!(
@@ -335,7 +357,7 @@ where
                 render_view: Mutex::new(render_view),
                 ctx: Mutex::new(CtxRef::default()),
                 tex_alloc: TextureAllocator::default(),
-                state: Mutex::new(T::default()),
+                state: Mutex::new(state),
                 backup: BackupState::default(),
                 shaders,
                 hwnd,

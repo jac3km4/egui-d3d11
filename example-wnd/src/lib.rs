@@ -45,7 +45,7 @@ unsafe extern "stdcall" fn hk_present(
     device.GetImmediateContext(&mut context);
 
     if OLD_WND_PROC.is_none() {
-        APP = Some(DirectX11App::new(ui, &swap_chain, &device));
+        APP = Some(DirectX11App::new_with_default(ui, &swap_chain, &device));
 
         let desc = swap_chain.GetDesc().unwrap();
         if desc.OutputWindow.is_invalid() {
