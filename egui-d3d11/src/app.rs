@@ -371,7 +371,7 @@ impl<T> DirectX11App<T> {
     }
 
     /// Present call. Should be called once per original present call, before or inside of hook.
-    pub fn present(&self, swap_chain: &IDXGISwapChain, _sync_flags: u32, _interval: u32) {
+    pub fn present(&self, swap_chain: &IDXGISwapChain, _sync_interval: u32, _flags: u32) {
         let (device, context) = get_device_context(swap_chain);
 
         let ctx_lock = &mut *self.ctx.lock();
