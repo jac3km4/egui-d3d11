@@ -4,7 +4,7 @@ use std::ffi::CStr;
 use windows::Win32::{
     Foundation::{HWND, RECT},
     System::{
-        DataExchange::{GetClipboardData, OpenClipboard, CloseClipboard},
+        DataExchange::{CloseClipboard, GetClipboardData, OpenClipboard},
         SystemServices::CF_TEXT,
         WindowsProgramming::NtQuerySystemTime,
     },
@@ -101,7 +101,7 @@ impl InputCollector {
             },
             WM_MOUSEHWHEEL => {
                 let delta = (wparam >> 16) as i16 as f32 * 10. / WHEEL_DELTA as f32;
-                
+
                 if wparam & MK_CONTROL as usize != 0 {
                     self.events.lock().push(Event::Zoom(
                         if delta > 0. { 1.5 } else { 0.5 }

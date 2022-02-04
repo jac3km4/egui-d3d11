@@ -351,7 +351,11 @@ where
 
         let input = self.input_collector.collect_input();
 
-        let (_output, shapes) = ctx_lock.run(input, |u| (self.ui)(u, &mut *self.state.lock()));
+        let (output, shapes) = ctx_lock.run(input, |u| (self.ui)(u, &mut *self.state.lock()));
+        if output.copied_text.len() > 0 {
+            // TODO: Do clipboard pasting.
+        }
+
         self.tex_alloc
             .update_font_if_needed(&device, &*ctx_lock.font_image());
         let meshes = convert_meshes(ctx_lock.tessellate(shapes));
