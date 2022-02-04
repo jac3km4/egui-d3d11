@@ -19,6 +19,5 @@ Example dll is contained in `example-wnd` folder. It uses either steam overlay h
 # **Contributions are welcome!**
 Feel free to make an issue or fork the repository if you would like to contribute to the project.
 
-# Examples
-![](pictures/01.png)
-![](pictures/02.png)
+# Example
+![](pictures/03.png)
