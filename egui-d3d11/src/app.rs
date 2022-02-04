@@ -244,7 +244,8 @@ impl<T> DirectX11App<T> {
         let view_lock = &mut *self.render_view.lock();
 
         unsafe {
-            // context.ClearRenderTargetView(view_lock.clone(), [1., 0., 0., 0.3].as_ptr());
+            #[cfg(feature = "clear")]
+            ctx.ClearRenderTargetView(view_lock.clone(), [0.2, 0.3, 0.9, 1.].as_ptr());
 
             ctx.OMSetRenderTargets(1, transmute(view_lock), None);
             ctx.IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
