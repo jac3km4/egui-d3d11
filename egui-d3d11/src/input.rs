@@ -1,14 +1,25 @@
 use egui::{Event, Key, Modifiers, PointerButton, Pos2, RawInput, Rect, Vec2};
 use parking_lot::Mutex;
+use std::ffi::CStr;
 use windows::Win32::{
     Foundation::{HWND, RECT},
-    System::WindowsProgramming::NtQuerySystemTime,
+    System::{
+        DataExchange::{GetClipboardData, OpenClipboard, CloseClipboard},
+        SystemServices::CF_TEXT,
+        WindowsProgramming::NtQuerySystemTime,
+    },
     UI::{
         Input::KeyboardAndMouse::{
-            GetAsyncKeyState, VK_BACK, VK_CONTROL, VK_DELETE, VK_DOWN, VK_END, VK_ESCAPE, VK_HOME,
-            VK_INSERT, VK_LEFT, VK_LSHIFT, VK_NEXT, VK_PRIOR, VK_RETURN, VK_RIGHT, VK_SPACE,
-            VK_TAB, VK_UP, VIRTUAL_KEY,
-        }, WindowsAndMessaging::{WHEEL_DELTA, WM_LBUTTONDOWN, WM_MOUSEMOVE, WM_LBUTTONDBLCLK, WM_LBUTTONUP, WM_RBUTTONDOWN, WM_RBUTTONDBLCLK, WM_RBUTTONUP, WM_MBUTTONDOWN, WM_MBUTTONDBLCLK, WM_MBUTTONUP, WM_CHAR, WM_MOUSEWHEEL, WM_MOUSEHWHEEL, WM_KEYDOWN, WM_SYSKEYDOWN, WM_SYSKEYUP, WM_KEYUP, GetClientRect, MK_SHIFT, MK_CONTROL},
+            GetAsyncKeyState, VIRTUAL_KEY, VK_BACK, VK_CONTROL, VK_DELETE, VK_DOWN, VK_END,
+            VK_ESCAPE, VK_HOME, VK_INSERT, VK_LEFT, VK_LSHIFT, VK_NEXT, VK_PRIOR, VK_RETURN,
+            VK_RIGHT, VK_SPACE, VK_TAB, VK_UP,
+        },
+        WindowsAndMessaging::{
+            GetClientRect, MK_CONTROL, MK_SHIFT, WHEEL_DELTA, WM_CHAR, WM_KEYDOWN, WM_KEYUP,
+            WM_LBUTTONDBLCLK, WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MBUTTONDBLCLK, WM_MBUTTONDOWN,
+            WM_MBUTTONUP, WM_MOUSEHWHEEL, WM_MOUSEMOVE, WM_MOUSEWHEEL, WM_RBUTTONDBLCLK,
+            WM_RBUTTONDOWN, WM_RBUTTONUP, WM_SYSKEYDOWN, WM_SYSKEYUP,
+        },
     },
 };
 
@@ -104,14 +115,25 @@ impl InputCollector {
             msg @ (WM_KEYDOWN | WM_SYSKEYDOWN) => {
                 if let Some(key) = get_key(wparam) {
                     let lock = &mut *self.events.lock();
+                    let mods = get_key_modifiers(msg);
+
                     if key == Key::Space {
                         lock.push(Event::Text(String::from(" ")));
+                    } else if key == Key::V && mods.ctrl {
+                        if let Some(clipboard) = get_clipboard_text() {
+                            lock.push(Event::Text(clipboard));
+                        }
+                    } else if key == Key::C && mods.ctrl {
+                        lock.push(Event::Copy);
+                    } else if key == Key::X && mods.ctrl {
+                        lock.push(Event::Cut);
+                    } else {
+                        lock.push(Event::Key {
+                            key,
+                            pressed: true,
+                            modifiers: get_key_modifiers(msg),
+                        });
                     }
-                    lock.push(Event::Key {
-                        key,
-                        pressed: true,
-                        modifiers: get_key_modifiers(msg),
-                    });
                 }
             },
             msg @ (WM_KEYUP | WM_SYSKEYUP) => {
@@ -231,5 +253,18 @@ fn get_key(wparam: usize) -> Option<Key> {
             VK_NEXT => Some(Key::PageDown),
             _ => None,
         },
+    }
+}
+
+fn get_clipboard_text() -> Option<String> {
+    unsafe {
+        if OpenClipboard(HWND::default()).as_bool() {
+            let txt = GetClipboardData(CF_TEXT.0).0 as *const i8;
+            let data = Some(CStr::from_ptr(txt).to_str().ok()?.to_string());
+            CloseClipboard();
+            data
+        } else {
+            None
+        }
     }
 }

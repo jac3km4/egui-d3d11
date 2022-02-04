@@ -1,9 +1,9 @@
 #![allow(unused)]
 
-use std::intrinsics::transmute;
-use egui::{Color32, CtxRef, Pos2, Rect, RichText, ScrollArea, Stroke, Slider, Widget};
+use egui::{Color32, CtxRef, Pos2, Rect, RichText, ScrollArea, Slider, Stroke, Widget};
 use egui_d3d11::DirectX11App;
 use faithe::{internal::alloc_console, pattern::Pattern};
+use std::intrinsics::transmute;
 use windows::{
     core::HRESULT,
     Win32::{

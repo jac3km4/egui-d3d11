@@ -28,7 +28,8 @@ use windows::{
                 },
                 IDXGISwapChain,
             },
-        }, UI::WindowsAndMessaging::GetClientRect,
+        },
+        UI::WindowsAndMessaging::GetClientRect,
     },
 };
 
@@ -255,7 +256,7 @@ impl<T> DirectX11App<T> {
 
             for mesh in &meshes {
                 let buffers = MeshBuffers::new(device, mesh);
-                
+
                 ctx.IASetVertexBuffers(
                     0,
                     1,
@@ -269,12 +270,15 @@ impl<T> DirectX11App<T> {
                     ctx.PSSetShaderResources(0, 1, self.tex_alloc.font_resource());
                 }
 
-                ctx.RSSetScissorRects(1, &RECT {
-                    left: (mesh.rect.min.x) as _,
-                    top: (mesh.rect.min.y) as _,
-                    right: (mesh.rect.max.x) as _,
-                    bottom: (mesh.rect.max.y) as _,
-                });
+                ctx.RSSetScissorRects(
+                    1,
+                    &RECT {
+                        left: (mesh.rect.min.x) as _,
+                        top: (mesh.rect.min.y) as _,
+                        right: (mesh.rect.max.x) as _,
+                        bottom: (mesh.rect.max.y) as _,
+                    },
+                );
 
                 ctx.DrawIndexed(mesh.indices.len() as _, 0, 0);
             }
@@ -286,13 +290,17 @@ impl<T> DirectX11App<T> {
 
 impl<T> DirectX11App<T>
 where
-    T: Default
+    T: Default,
 {
     pub fn state(&self) -> MutexGuard<T> {
         self.state.lock()
     }
 
-    pub fn new(ui: fn(&CtxRef, &mut T), swap_chain: &IDXGISwapChain, device: &ID3D11Device) -> Self {
+    pub fn new(
+        ui: fn(&CtxRef, &mut T),
+        swap_chain: &IDXGISwapChain,
+        device: &ID3D11Device,
+    ) -> Self {
         unsafe {
             let hwnd = expect!(
                 swap_chain.GetDesc(),
@@ -343,10 +351,7 @@ where
 
         let input = self.input_collector.collect_input();
 
-        let (_output, shapes) = ctx_lock.run(
-            input,
-            |u| (self.ui)(u, &mut *self.state.lock())
-        );
+        let (_output, shapes) = ctx_lock.run(input, |u| (self.ui)(u, &mut *self.state.lock()));
         self.tex_alloc
             .update_font_if_needed(&device, &*ctx_lock.font_image());
         let meshes = convert_meshes(ctx_lock.tessellate(shapes));
