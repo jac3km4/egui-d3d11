@@ -52,7 +52,7 @@ pub struct DirectX11App<T = ()> {
     tex_alloc: TextureAllocator,
     sampler: ID3D11SamplerState,
     shaders: CompiledShaders,
-    ui: fn(&CtxRef, &mut T),
+    ui: Box<dyn FnMut(&CtxRef, &mut T) + 'static>,
     backup: BackupState,
     ctx: Mutex<CtxRef>,
     state: Mutex<T>,
@@ -294,7 +294,7 @@ where
 {
     #[inline]
     pub fn new_with_default(
-        ui: fn(&CtxRef, &mut T),
+        ui: impl FnMut(&CtxRef, &mut T) + 'static,
         swap_chain: &IDXGISwapChain,
         device: &ID3D11Device,
     ) -> Self {
@@ -309,16 +309,16 @@ impl<T> DirectX11App<T> {
 
     #[inline]
     pub fn new_with(
-        ui: fn(&CtxRef, &mut T),
+        ui: impl FnMut(&CtxRef, &mut T) + 'static,
         swap_chain: &IDXGISwapChain,
         device: &ID3D11Device,
-        state: impl FnOnce() -> T
+        state: impl FnOnce() -> T,
     ) -> Self {
         Self::new_with_state(ui, swap_chain, device, state())
     }
 
     pub fn new_with_state(
-        ui: fn(&CtxRef, &mut T),
+        ui: impl FnMut(&CtxRef, &mut T) + 'static,
         swap_chain: &IDXGISwapChain,
         device: &ID3D11Device,
         state: T,
@@ -359,9 +359,9 @@ impl<T> DirectX11App<T> {
                 tex_alloc: TextureAllocator::default(),
                 state: Mutex::new(state),
                 backup: BackupState::default(),
+                ui: Box::new(ui),
                 shaders,
                 hwnd,
-                ui,
             }
         }
     }
@@ -373,7 +373,11 @@ impl<T> DirectX11App<T> {
 
         let input = self.input_collector.collect_input();
 
-        let (output, shapes) = ctx_lock.run(input, |u| (self.ui)(u, &mut *self.state.lock()));
+        // This should be fine as present can't be called from different threads by
+        // a person with enough intelect.
+        let ui = self.ui.as_ref() as *const _ as *mut dyn FnMut(&CtxRef, &mut T);
+        let (output, shapes) =
+            ctx_lock.run(input, |u| unsafe { (*ui)(u, &mut *self.state.lock()) });
         if !output.copied_text.is_empty() {
             // TODO: Do clipboard pasting.
         }

@@ -112,7 +112,7 @@ impl MeshBuffers {
 pub fn convert_meshes(clipped: Vec<ClippedMesh>) -> Vec<GpuMesh> {
     clipped
         .into_iter()
-        .filter(|m| m.1.indices.is_empty() && m.1.indices.len() % 3 == 0)
+        .filter(|m| !m.1.indices.is_empty() && m.1.indices.len() % 3 == 0)
         .map(GpuMesh::from)
         .collect()
 }
