@@ -26,7 +26,7 @@ Texture2D texture0;
 float4 ps_main(vs_out input) : SV_TARGET {
   float3 albedo = pow(
     input.color.xyz,
-    (1.0 / 1.8).xxx
+    (1.0 / 2.2).xxx
   );
   float alpha = input.color.w * texture0.Sample(sampler0, input.uv).x;
 

@@ -1,7 +1,7 @@
 #![allow(unused)]
 
 use std::intrinsics::transmute;
-use egui::{Color32, CtxRef, Pos2, Rect, RichText, ScrollArea, Stroke};
+use egui::{Color32, CtxRef, Pos2, Rect, RichText, ScrollArea, Stroke, Slider, Widget};
 use egui_d3d11::DirectX11App;
 use faithe::{internal::alloc_console, pattern::Pattern};
 use windows::{
@@ -100,8 +100,12 @@ unsafe extern "stdcall" fn hk_wnd_proc(
 }
 
 fn ui(ctx: &CtxRef, i: &mut i32) {
+    // You should not use statics like this, it made
+    // this way for the sake of example.
     static mut UI_CHECK: bool = true;
     static mut TEXT: Option<String> = None;
+    static mut VALUE: f32 = 0.;
+    static mut COLOR: [f32; 3] = [0., 0., 0.];
 
     unsafe {
         if TEXT.is_none() {
@@ -124,7 +128,28 @@ fn ui(ctx: &CtxRef, i: &mut i32) {
                     ui.label(format!("Label: {}", i));
                 }
             });
+
+            Slider::new(&mut VALUE, -1.0..=1.0).ui(ui);
+
+            ui.color_edit_button_rgb(&mut COLOR);
         }
+
+        fn example_plot(ui: &mut egui::Ui) -> egui::Response {
+            use egui::plot::{Line, Value, Values};
+            let n = 128;
+            let line = Line::new(Values::from_values_iter((0..=n).map(|i| {
+                use std::f64::consts::TAU;
+                let x = egui::remap(i as f64, 0.0..=n as f64, -TAU..=TAU);
+                Value::new(x, x.sin())
+            })));
+            egui::plot::Plot::new("example_plot")
+                .height(64.0)
+                .data_aspect(1.0)
+                .show(ui, |plot_ui| plot_ui.line(line))
+                .response
+        }
+
+        example_plot(ui);
 
         ui.label(format!(
             "{:?}",
