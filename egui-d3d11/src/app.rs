@@ -44,15 +44,19 @@ use crate::{
 type FnResizeBuffers =
     unsafe extern "stdcall" fn(IDXGISwapChain, u32, u32, u32, DXGI_FORMAT, u32) -> HRESULT;
 
-#[allow(unused)]
+/// Heart and soul of this integration.
+/// Main methods you are going to use are:
+/// * [`Self::present`] - Should be called inside of hook are before present.
+/// * [`Self::resize_buffers`] - Should be called **INSTEAD** of swapchain's `ResizeBuffers`.
+/// * [`Self::wnd_proc`] - Should be called on each `WndProc`. return value doesn't mean anything *yet*.
 pub struct DirectX11App<T = ()> {
+    ui: Box<dyn FnMut(&CtxRef, &mut T) + 'static>,
     render_view: Mutex<ID3D11RenderTargetView>,
     input_collector: InputCollector,
     input_layout: ID3D11InputLayout,
     tex_alloc: TextureAllocator,
     sampler: ID3D11SamplerState,
     shaders: CompiledShaders,
-    ui: Box<dyn FnMut(&CtxRef, &mut T) + 'static>,
     backup: BackupState,
     ctx: Mutex<CtxRef>,
     state: Mutex<T>,
@@ -292,6 +296,7 @@ impl<T> DirectX11App<T>
 where
     T: Default,
 {
+    /// Creates new app with state set to default value.
     #[inline]
     pub fn new_with_default(
         ui: impl FnMut(&CtxRef, &mut T) + 'static,
@@ -303,10 +308,12 @@ where
 }
 
 impl<T> DirectX11App<T> {
+    /// Returns lock to state of the app.
     pub fn state(&self) -> MutexGuard<T> {
         self.state.lock()
     }
 
+    /// Creates new app with state initialized from closule call.
     #[inline]
     pub fn new_with(
         ui: impl FnMut(&CtxRef, &mut T) + 'static,
@@ -317,6 +324,7 @@ impl<T> DirectX11App<T> {
         Self::new_with_state(ui, swap_chain, device, state())
     }
 
+    /// Creates new app with explicit state value.
     pub fn new_with_state(
         ui: impl FnMut(&CtxRef, &mut T) + 'static,
         swap_chain: &IDXGISwapChain,
@@ -366,6 +374,7 @@ impl<T> DirectX11App<T> {
         }
     }
 
+    /// Present call. Should be called once per original present call, before or inside of hook.
     pub fn present(&self, swap_chain: &IDXGISwapChain, _sync_flags: u32, _interval: u32) {
         let (device, context) = get_device_context(swap_chain);
 
@@ -389,6 +398,8 @@ impl<T> DirectX11App<T> {
         self.render_meshes(meshes, &device, &context);
     }
 
+    /// Call when resizing buffers.
+    /// Do not call the original function, instead pass pointer to it as an argument to this function.
     #[allow(clippy::too_many_arguments)]
     pub fn resize_buffers(
         &self,
@@ -431,6 +442,7 @@ impl<T> DirectX11App<T> {
         }
     }
 
+    /// Call on each `WndProc` occurence.
     #[inline]
     pub fn wnd_proc(&self, _hwnd: HWND, umsg: u32, wparam: WPARAM, lparam: LPARAM) -> bool {
         self.input_collector.process(umsg, wparam.0, lparam.0);
