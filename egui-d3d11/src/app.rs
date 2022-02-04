@@ -148,25 +148,15 @@ impl DirectX11App {
         screen_half.x /= 2.;
         screen_half.y /= 2.;
 
-        let normalize_point = |point: &mut Pos2| {
-            point.x -= screen_half.x;
-            point.y -= screen_half.y;
-
-            point.x /= screen_half.x;
-            point.y /= -screen_half.y;
-        };
-
         meshes
             .iter_mut()
-            .map(|m| (&mut m.vertices, &mut m.rect))
-            .for_each(|(vertices, clip)| {
-                vertices
-                    .iter_mut()
-                    .map(|v| &mut v.pos)
-                    .for_each(normalize_point);
+            .flat_map(|m| &mut m.vertices)
+            .for_each(|v| {
+                v.pos.x -= screen_half.x;
+                v.pos.y -= screen_half.y;
 
-                normalize_point(&mut clip.min);
-                normalize_point(&mut clip.max)
+                v.pos.x /= screen_half.x;
+                v.pos.y /= -screen_half.y;
             })
     }
 
@@ -221,7 +211,7 @@ impl DirectX11App {
             DepthBiasClamp: 0.,
             SlopeScaledDepthBias: 0.,
             DepthClipEnable: false.into(),
-            ScissorEnable: false.into(),
+            ScissorEnable: true.into(),
             MultisampleEnable: false.into(),
             AntialiasedLineEnable: false.into(),
         };
@@ -258,9 +248,14 @@ impl DirectX11App {
             ctx.IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
             ctx.IASetInputLayout(&self.input_layout);
 
+            ctx.VSSetShader(&self.shaders.vertex, null(), 0);
+            ctx.PSSetShader(&self.shaders.pixel, null(), 0);
+            ctx.PSSetSamplers(0, 1, transmute(&self.sampler));
+            ctx.GSSetShader(None, null(), 0);
+
             for mesh in &meshes {
                 let buffers = MeshBuffers::new(device, mesh);
-
+                
                 ctx.IASetVertexBuffers(
                     0,
                     1,
@@ -270,14 +265,16 @@ impl DirectX11App {
                 );
                 ctx.IASetIndexBuffer(&buffers.index, DXGI_FORMAT_R32_UINT, 0);
 
-                ctx.VSSetShader(&self.shaders.vertex, null(), 0);
-                ctx.PSSetShader(&self.shaders.pixel, null(), 0);
-                ctx.PSSetSamplers(0, 1, transmute(&self.sampler));
-                ctx.GSSetShader(None, null(), 0);
-
                 if mesh.tex_id == TextureId::Egui {
                     ctx.PSSetShaderResources(0, 1, self.tex_alloc.font_resource());
                 }
+
+                ctx.RSSetScissorRects(1, &RECT {
+                    left: (mesh.rect.min.x) as _,
+                    top: (mesh.rect.min.y) as _,
+                    right: (mesh.rect.max.x) as _,
+                    bottom: (mesh.rect.max.y) as _,
+                });
 
                 ctx.DrawIndexed(mesh.indices.len() as _, 0, 0);
             }

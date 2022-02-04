@@ -121,7 +121,7 @@ fn ui(ctx: &CtxRef) {
             ui.checkbox(&mut UI_CHECK, "Some checkbox");
             ui.text_edit_singleline(TEXT.as_mut().unwrap());
             ScrollArea::vertical().max_height(200.).show(ui, |ui| {
-                for i in 1..=1000 {
+                for i in 1..=100 {
                     ui.label(format!("Label: {}", i));
                 }
             });
