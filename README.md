@@ -9,6 +9,7 @@ Currently many features from egui are missing. WIP.
 - [x] Keyboard input
 - [x] Scroll support
 - [x] Scissor rects clipping
+- [x] State storage
 - [ ] Other image textures
 - [ ] Drag & Drop support
 
