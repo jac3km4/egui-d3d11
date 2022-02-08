@@ -11,6 +11,7 @@ Currently few features from egui are missing. WIP.
 - [x] Scissor rects clipping
 - [x] State storage
 - [ ] Other image textures
+- [ ] Different cursor icons
 - [ ] Drag & Drop support
 
 # Example DLL
