@@ -41,7 +41,7 @@ unsafe extern "stdcall" fn hk_present(
     flags: u32,
 ) -> HRESULT {
     let device: ID3D11Device = swap_chain.GetDevice().unwrap();
-    
+
     if APP.is_none() {
         APP = Some(DirectX11App::new_with_default(ui, &swap_chain));
 
@@ -73,17 +73,16 @@ unsafe extern "stdcall" fn hk_resize_buffers(
     new_format: DXGI_FORMAT,
     swap_chain_flags: u32,
 ) -> HRESULT {
-    APP.as_ref().unwrap().resize_buffers(
-        &swap_chain,
-        || O_RESIZE_BUFFERS.as_ref().unwrap()(
+    APP.as_ref().unwrap().resize_buffers(&swap_chain, || {
+        O_RESIZE_BUFFERS.as_ref().unwrap()(
             swap_chain.clone(),
             buffer_count,
             width,
             height,
             new_format,
-            swap_chain_flags
+            swap_chain_flags,
         )
-    )
+    })
 }
 
 unsafe extern "stdcall" fn hk_wnd_proc(
@@ -93,7 +92,7 @@ unsafe extern "stdcall" fn hk_wnd_proc(
     lparam: LPARAM,
 ) -> LRESULT {
     APP.as_ref().unwrap().wnd_proc(msg, wparam, lparam);
-    
+
     CallWindowProcW(OLD_WND_PROC.unwrap(), hwnd, msg, wparam, lparam)
 }
 

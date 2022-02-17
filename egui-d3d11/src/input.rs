@@ -39,7 +39,7 @@ pub enum InputResult {
     Character,
     Scroll,
     Zoom,
-    Key
+    Key,
 }
 
 impl InputResult {
@@ -47,7 +47,7 @@ impl InputResult {
     pub fn is_valid(&self) -> bool {
         !self.is_unknown()
     }
-    
+
     #[inline]
     pub fn is_unknown(&self) -> bool {
         matches!(*self, InputResult::Unknown)

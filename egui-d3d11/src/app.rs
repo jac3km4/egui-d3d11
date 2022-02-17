@@ -23,8 +23,7 @@ use windows::{
             },
             Dxgi::{
                 Common::{
-                    DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R32G32_FLOAT,
-                    DXGI_FORMAT_R32_UINT,
+                    DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R32_UINT,
                 },
                 IDXGISwapChain,
             },
@@ -109,8 +108,8 @@ impl<T> DirectX11App<T> {
                 device.CreateInputLayout(
                     Self::LAYOUT_ELEMENTS.as_ptr(),
                     Self::LAYOUT_ELEMENTS.len() as _,
-                    shaders.blobs.vertex.GetBufferPointer(),
-                    shaders.blobs.vertex.GetBufferSize()
+                    shaders.get_vertex_bytecode() as _,
+                    shaders.get_vertex_bytecode_len()
                 ),
                 "Failed to create input layout."
             )
@@ -333,7 +332,7 @@ impl<T> DirectX11App<T> {
             )
             .OutputWindow;
 
-            let (device , _) = get_device_context(swap_chain);
+            let (device, _) = get_device_context(swap_chain);
 
             if hwnd.is_invalid() {
                 if !cfg!(feature = "no-msgs") {

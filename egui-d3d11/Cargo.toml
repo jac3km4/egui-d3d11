@@ -1,6 +1,6 @@
 [package]
 name = "egui-d3d11"
-version = "0.5.0"
+version = "0.5.1"
 edition = "2021"
 authors = ["sy1ntexx"]
 description = "D3D11 backend for egui library."
@@ -21,7 +21,12 @@ egui = "0.16.1"
 
 [features]
 no-msgs = []
+# Debug feature, enables clearing of the view.
 clear = []
+# Enables force compilation of shader code
+force-compile = []
+# Enables saving shader byte code into file on compile.
+save-blob = []
 
 [dependencies.windows]
 version = "0.32.0"
