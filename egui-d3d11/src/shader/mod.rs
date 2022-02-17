@@ -86,7 +86,7 @@ impl CompiledShaders {
     
     #[cfg(not(feature = "force-compile"))]
     pub fn new(device: &ID3D11Device) -> Self {
-        static VERTEX_DATA: &'static [u8] = include_bytes!("vertex_blob.bin");
+        static VERTEX_DATA: &[u8] = include_bytes!("vertex_blob.bin");
     
         let vertex = Self::create_shader::<ID3D11VertexShader>(
             device,

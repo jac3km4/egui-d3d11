@@ -5,9 +5,6 @@ edition = "2021"
 authors = ["sy1ntexx"]
 description = "D3D11 backend for egui library."
 repository = "https://github.com/sy1ntexx/egui-d3d11"
-exclude = [
-    "example-wnd"
-]
 license = "MIT"
 
 [package.metadata.docs.rs]
