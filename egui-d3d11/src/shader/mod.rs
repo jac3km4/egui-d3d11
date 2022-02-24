@@ -177,7 +177,7 @@ impl CompiledShaders {
             )
             .is_err()
             {
-                if cfg!(feature = "no-msgs") {
+                if !cfg!(feature = "no-msgs") {
                     let error = std::str::from_utf8_unchecked(std::slice::from_raw_parts(
                         error.as_ref().unwrap().GetBufferPointer() as *const u8,
                         error.as_ref().unwrap().GetBufferSize(),

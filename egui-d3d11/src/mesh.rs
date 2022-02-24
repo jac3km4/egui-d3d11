@@ -13,15 +13,27 @@ pub struct GpuVertex {
     pub pos: Pos2,
     pub uv: Pos2,
     pub color: Rgba,
+    mode: u8
 }
 
-impl From<Vertex> for GpuVertex {
+impl GpuVertex {
     #[inline]
-    fn from(v: Vertex) -> Self {
+    pub fn new_alpha(v: Vertex) -> Self {
         Self {
             pos: v.pos,
             uv: v.uv,
             color: v.color.into(),
+            mode: 0,
+        }
+    }
+
+    #[inline]
+    pub fn new_rgba(v: Vertex) -> Self {
+        Self {
+            pos: v.pos,
+            uv: v.uv,
+            color: v.color.into(),
+            mode: 1,
         }
     }
 }
@@ -38,7 +50,11 @@ impl From<ClippedMesh> for GpuMesh {
     #[inline]
     fn from(cm: ClippedMesh) -> Self {
         Self {
-            vertices: cm.1.vertices.into_iter().map(GpuVertex::from).collect(),
+            vertices: if cm.1.texture_id == TextureId::default() {
+                cm.1.vertices.into_iter().map(GpuVertex::new_alpha).collect()
+            } else {
+                cm.1.vertices.into_iter().map(GpuVertex::new_rgba).collect()
+            },
             tex_id: cm.1.texture_id,
             indices: cm.1.indices,
             rect: cm.0,

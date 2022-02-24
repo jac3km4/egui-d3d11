@@ -23,7 +23,7 @@ use windows::{
             },
             Dxgi::{
                 Common::{
-                    DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R32_UINT,
+                    DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R8_UINT,
                 },
                 IDXGISwapChain,
             },
@@ -72,7 +72,7 @@ impl<T> DirectX11App<T> {
         }
     }
 
-    const LAYOUT_ELEMENTS: [D3D11_INPUT_ELEMENT_DESC; 3] = [
+    const LAYOUT_ELEMENTS: [D3D11_INPUT_ELEMENT_DESC; 4] = [
         D3D11_INPUT_ELEMENT_DESC {
             SemanticName: c_str!("POSITION"),
             SemanticIndex: 0,
@@ -95,6 +95,15 @@ impl<T> DirectX11App<T> {
             SemanticName: c_str!("COLOR"),
             SemanticIndex: 0,
             Format: DXGI_FORMAT_R32G32B32A32_FLOAT,
+            InputSlot: 0,
+            AlignedByteOffset: D3D11_APPEND_ALIGNED_ELEMENT,
+            InputSlotClass: D3D11_INPUT_PER_VERTEX_DATA,
+            InstanceDataStepRate: 0,
+        },
+        D3D11_INPUT_ELEMENT_DESC {
+            SemanticName: c_str!("MODE"),
+            SemanticIndex: 0,
+            Format: DXGI_FORMAT_R8_UINT,
             InputSlot: 0,
             AlignedByteOffset: D3D11_APPEND_ALIGNED_ELEMENT,
             InputSlotClass: D3D11_INPUT_PER_VERTEX_DATA,
