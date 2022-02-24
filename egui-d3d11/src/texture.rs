@@ -4,37 +4,26 @@ use parking_lot::{Mutex, MutexGuard};
 use windows::Win32::Graphics::{
     Direct3D::D3D11_SRV_DIMENSION_TEXTURE2D,
     Direct3D11::{
-        ID3D11Device, D3D11_BIND_SHADER_RESOURCE, D3D11_CPU_ACCESS_FLAG, D3D11_RESOURCE_MISC_FLAG,
-        D3D11_SHADER_RESOURCE_VIEW_DESC, D3D11_SHADER_RESOURCE_VIEW_DESC_0, D3D11_SUBRESOURCE_DATA,
-        D3D11_TEX2D_SRV, D3D11_TEXTURE2D_DESC, D3D11_USAGE_DEFAULT, ID3D11ShaderResourceView,
+        ID3D11Device, ID3D11ShaderResourceView, D3D11_BIND_SHADER_RESOURCE, D3D11_CPU_ACCESS_WRITE,
+        D3D11_RESOURCE_MISC_FLAG, D3D11_SHADER_RESOURCE_VIEW_DESC,
+        D3D11_SHADER_RESOURCE_VIEW_DESC_0, D3D11_SUBRESOURCE_DATA, D3D11_TEX2D_SRV,
+        D3D11_TEXTURE2D_DESC, D3D11_USAGE_DYNAMIC,
     },
-    Dxgi::Common::{DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8_UNORM, DXGI_SAMPLE_DESC, DXGI_FORMAT},
+    Dxgi::Common::{DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8_UNORM, DXGI_SAMPLE_DESC},
 };
 
 #[allow(dead_code)]
 pub struct AllocatedTexture {
-    view: ID3D11ShaderResourceView,
-    format: DXGI_FORMAT
+    resource: ID3D11ShaderResourceView,
+    image: ImageData
 }
 
-#[allow(dead_code)]
 impl AllocatedTexture {
     #[inline]
     pub fn resource(&self) -> &ID3D11ShaderResourceView {
-        &self.view
-    }
-
-    #[inline]
-    pub fn is_rgba(&self) -> bool {
-        self.format == DXGI_FORMAT_R8G8B8A8_UNORM
-    }
-
-    #[inline]
-    pub fn is_alpha(&self) -> bool {
-        self.format == DXGI_FORMAT_R8_UNORM
+        &self.resource
     }
 }
-
 
 #[derive(Default)]
 pub struct TextureAllocator {
@@ -42,40 +31,42 @@ pub struct TextureAllocator {
 }
 
 impl TextureAllocator {
+    #[inline]
     pub fn allocated(&self) -> MutexGuard<HashMap<TextureId, AllocatedTexture>> {
         self.allocated.lock()
     }
 
-    pub fn resolve_delta(&self, delta: &TexturesDelta, device: &ID3D11Device) {
-        for &free in &delta.free {
-            self.free_texture(free);
+    #[inline]
+    pub fn resolve_delta(&self, delta: TexturesDelta, device: &ID3D11Device) {
+        let lock = &mut *self.allocated();
+
+        for free in delta.free {
+            drop(lock.remove(&free));
         }
 
-        for (&id, delta) in &delta.set {
-            if !delta.is_whole() {
-                if cfg!(feature = "no-msgs") {
-                    unimplemented!()
-                } else {
-                    panic!("Partial textures updates are not supported.");
-                }
+        for (id, img) in delta.set {
+            if let Some(_) = img.pos {
+                panic!("Partial updates are not supported.");
+            } else {
+                let tex = Self::allocate_texture(img.image, device);
+                lock.insert(id, tex);
             }
-
-            self.allocate_texture_overwrite(id, &delta.image, device);
         }
     }
 
-    /// Allocates new texture, overwriting the previous one with the same key if was present.
-    /// Returns `true` if previous texture was overwritten and `false` if there was no previous texture occupying the `id`.
-    pub fn allocate_texture_overwrite(&self, id: TextureId, data: &ImageData, device: &ID3D11Device) -> bool {
-        let format = if data.bytes_per_pixel() == 1 {
+    fn allocate_texture(
+        image: ImageData,
+        device: &ID3D11Device,
+    ) -> AllocatedTexture {
+        let format = if image.bytes_per_pixel() == 1 {
             DXGI_FORMAT_R8_UNORM
         } else {
             DXGI_FORMAT_R8G8B8A8_UNORM
         };
 
         let desc = D3D11_TEXTURE2D_DESC {
-            Width: data.width() as _,
-            Height: data.height() as _,
+            Width: image.width() as _,
+            Height: image.height() as _,
             MipLevels: 1,
             ArraySize: 1,
             Format: format,
@@ -83,29 +74,29 @@ impl TextureAllocator {
                 Count: 1,
                 Quality: 0,
             },
-            Usage: D3D11_USAGE_DEFAULT,
+            Usage: D3D11_USAGE_DYNAMIC,
             BindFlags: D3D11_BIND_SHADER_RESOURCE,
-            CPUAccessFlags: D3D11_CPU_ACCESS_FLAG(0),
+            CPUAccessFlags: D3D11_CPU_ACCESS_WRITE,
             MiscFlags: D3D11_RESOURCE_MISC_FLAG(0),
         };
 
-        let init_data = D3D11_SUBRESOURCE_DATA {
-            pSysMem: match data {
+        let init = D3D11_SUBRESOURCE_DATA {
+            pSysMem: match &image {
                 ImageData::Color(c) => c.pixels.as_ptr() as _,
                 ImageData::Alpha(a) => a.pixels.as_ptr() as _,
             },
-            SysMemPitch: (data.width() * data.bytes_per_pixel()) as _,
+            SysMemPitch: (image.width() * image.bytes_per_pixel()) as _,
             SysMemSlicePitch: 0,
         };
 
         let texture = unsafe {
             expect!(
-                device.CreateTexture2D(&desc, &init_data),
-                "Failed to create image texture."
+                device.CreateTexture2D(&desc, &init),
+                "Failed to create 2D texture."
             )
         };
 
-        let view_desc = D3D11_SHADER_RESOURCE_VIEW_DESC {
+        let desc = D3D11_SHADER_RESOURCE_VIEW_DESC {
             Format: format,
             ViewDimension: D3D11_SRV_DIMENSION_TEXTURE2D,
             Anonymous: D3D11_SHADER_RESOURCE_VIEW_DESC_0 {
@@ -118,42 +109,15 @@ impl TextureAllocator {
 
         let resource = unsafe {
             expect!(
-                device.CreateShaderResourceView(&texture, &view_desc),
+                device.CreateShaderResourceView(&texture, &desc),
                 "Failed to create shader resource view."
             )
         };
         drop(texture);
 
-        let tex = AllocatedTexture {
-            view: resource,
-            format,
-        };
-
-        if let Some(_) = self.allocated.lock().insert(id, tex) {
-            true
-        } else {
-            false
-        }
-    }
-
-    #[allow(dead_code)]
-    /// Returns `true` if new texture was successfully allocated or`false` if such key was already present.
-    pub fn allocate_texture_if_needed(&self, id: TextureId, data: &ImageData, device: &ID3D11Device) -> bool {
-        if self.allocated.lock().contains_key(&id) {
-            return false;
-        }
-
-        self.allocate_texture_overwrite(id, data, device);
-
-        true
-    }
-
-    /// Returns `true` if texture was dropped or `false` if this ID was not present.
-    pub fn free_texture(&self, id: TextureId) -> bool {
-        if let Some(_) = self.allocated.lock().remove(&id) {
-            true
-        } else {
-            false
+        AllocatedTexture { 
+            resource,
+            image, 
         }
     }
 }

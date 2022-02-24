@@ -23,7 +23,8 @@ use windows::{
             },
             Dxgi::{
                 Common::{
-                    DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R8_UINT,
+                    DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R32_UINT,
+                    DXGI_FORMAT_R8_UINT,
                 },
                 IDXGISwapChain,
             },
@@ -277,7 +278,7 @@ impl<T> DirectX11App<T> {
                     &0,
                 );
                 ctx.IASetIndexBuffer(&buffers.index, DXGI_FORMAT_R32_UINT, 0);
-                
+
                 if let Some(tex) = tex_lock.get(&mesh.tex_id) {
                     ctx.PSSetShaderResources(0, 1, transmute(tex.resource()));
                 } else {
@@ -406,7 +407,7 @@ impl<T> DirectX11App<T> {
         }
 
         let meshes = convert_meshes(ctx_lock.tessellate(shapes));
-        self.tex_alloc.resolve_delta(&textures_delta, &device);
+        self.tex_alloc.resolve_delta(textures_delta, &device);
 
         self.render_meshes(meshes, &device, &context);
     }
