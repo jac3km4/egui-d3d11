@@ -1,4 +1,4 @@
-use egui::{CtxRef, Pos2, TextureId};
+use egui::{Context, FullOutput, Pos2};
 use parking_lot::{Mutex, MutexGuard};
 use std::{
     intrinsics::transmute,
@@ -46,7 +46,7 @@ use crate::{
 /// * [`Self::resize_buffers`] - Should be called **INSTEAD** of swapchain's `ResizeBuffers`.
 /// * [`Self::wnd_proc`] - Should be called on each `WndProc`.
 pub struct DirectX11App<T = ()> {
-    ui: Box<dyn FnMut(&CtxRef, &mut T) + 'static>,
+    ui: Box<dyn FnMut(&Context, &mut T) + 'static>,
     render_view: Mutex<ID3D11RenderTargetView>,
     input_collector: InputCollector,
     input_layout: ID3D11InputLayout,
@@ -54,7 +54,7 @@ pub struct DirectX11App<T = ()> {
     sampler: ID3D11SamplerState,
     shaders: CompiledShaders,
     backup: BackupState,
-    ctx: Mutex<CtxRef>,
+    ctx: Mutex<Context>,
     state: Mutex<T>,
     hwnd: HWND,
 }
@@ -255,6 +255,8 @@ impl<T> DirectX11App<T> {
             ctx.PSSetSamplers(0, 1, transmute(&self.sampler));
             ctx.GSSetShader(None, null(), 0);
 
+            let tex_lock = self.tex_alloc.allocated();
+
             for mesh in &meshes {
                 let buffers = MeshBuffers::new(device, mesh);
 
@@ -266,9 +268,11 @@ impl<T> DirectX11App<T> {
                     &0,
                 );
                 ctx.IASetIndexBuffer(&buffers.index, DXGI_FORMAT_R32_UINT, 0);
-
-                if mesh.tex_id == TextureId::Egui {
-                    ctx.PSSetShaderResources(0, 1, self.tex_alloc.font_resource());
+                
+                if let Some(tex) = tex_lock.get(&mesh.tex_id) {
+                    ctx.PSSetShaderResources(0, 1, transmute(tex.resource()));
+                } else {
+                    unreachable!()
                 }
 
                 ctx.RSSetScissorRects(
@@ -296,7 +300,7 @@ where
     /// Creates new app with state set to default value.
     #[inline]
     pub fn new_with_default(
-        ui: impl FnMut(&CtxRef, &mut T) + 'static,
+        ui: impl FnMut(&Context, &mut T) + 'static,
         swap_chain: &IDXGISwapChain,
     ) -> Self {
         Self::new_with_state(ui, swap_chain, T::default())
@@ -312,7 +316,7 @@ impl<T> DirectX11App<T> {
     /// Creates new app with state initialized from closule call.
     #[inline]
     pub fn new_with(
-        ui: impl FnMut(&CtxRef, &mut T) + 'static,
+        ui: impl FnMut(&Context, &mut T) + 'static,
         swap_chain: &IDXGISwapChain,
         state: impl FnOnce() -> T,
     ) -> Self {
@@ -321,7 +325,7 @@ impl<T> DirectX11App<T> {
 
     /// Creates new app with explicit state value.
     pub fn new_with_state(
-        ui: impl FnMut(&CtxRef, &mut T) + 'static,
+        ui: impl FnMut(&Context, &mut T) + 'static,
         swap_chain: &IDXGISwapChain,
         state: T,
     ) -> Self {
@@ -359,7 +363,7 @@ impl<T> DirectX11App<T> {
                 sampler: Self::create_sampler_state(&device),
                 input_collector: InputCollector::new(hwnd),
                 render_view: Mutex::new(render_view),
-                ctx: Mutex::new(CtxRef::default()),
+                ctx: Mutex::new(Context::default()),
                 tex_alloc: TextureAllocator::default(),
                 state: Mutex::new(state),
                 backup: BackupState::default(),
@@ -380,16 +384,20 @@ impl<T> DirectX11App<T> {
 
         // This should be fine as present can't be called from different threads by
         // a person with enough intelect.
-        let ui = self.ui.as_ref() as *const _ as *mut dyn FnMut(&CtxRef, &mut T);
-        let (output, shapes) =
-            ctx_lock.run(input, |u| unsafe { (*ui)(u, &mut *self.state.lock()) });
-        if !output.copied_text.is_empty() {
-            // TODO: Do clipboard pasting.
+        let ui = self.ui.as_ref() as *const _ as *mut dyn FnMut(&Context, &mut T);
+        let FullOutput {
+            shapes,
+            platform_output,
+            textures_delta,
+            ..
+        } = ctx_lock.run(input, |u| unsafe { (*ui)(u, &mut *self.state.lock()) });
+
+        if !platform_output.copied_text.is_empty() {
+            // @TODO: Do clipboard pasting.
         }
 
-        self.tex_alloc
-            .update_font_if_needed(&device, &*ctx_lock.font_image());
         let meshes = convert_meshes(ctx_lock.tessellate(shapes));
+        self.tex_alloc.resolve_delta(&textures_delta, &device);
 
         self.render_meshes(meshes, &device, &context);
     }

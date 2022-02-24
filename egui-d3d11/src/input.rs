@@ -65,8 +65,7 @@ impl InputCollector {
     pub fn process(&self, umsg: u32, wparam: usize, lparam: isize) -> InputResult {
         match umsg {
             WM_MOUSEMOVE => {
-                self
-                    .events
+                self.events
                     .lock()
                     .push(Event::PointerMoved(get_pos(lparam)));
                 InputResult::MouseMove
@@ -125,45 +124,40 @@ impl InputCollector {
                 });
                 InputResult::MouseMiddle
             }
-            // TODO: Decide if adding `WM_SYSCHAR` is necessary.
-            WM_CHAR /* | WM_SYSCHAR */ => {
+            WM_CHAR => {
                 if let Some(ch) = char::from_u32(wparam as _) {
                     if !ch.is_control() {
                         self.events.lock().push(Event::Text(ch.into()));
                     }
                 }
                 InputResult::Character
-            },
+            }
             WM_MOUSEWHEEL => {
                 let delta = (wparam >> 16) as i16 as f32 * 10. / WHEEL_DELTA as f32;
 
                 if wparam & MK_CONTROL as usize != 0 {
-                    self.events.lock().push(Event::Zoom(
-                        if delta > 0. { 1.5 } else { 0.5 }
-                    ));
+                    self.events
+                        .lock()
+                        .push(Event::Zoom(if delta > 0. { 1.5 } else { 0.5 }));
                     InputResult::Zoom
                 } else {
-                    self.events.lock().push(Event::Scroll(
-                        Vec2::new(0., delta)
-                    ));
+                    self.events.lock().push(Event::Scroll(Vec2::new(0., delta)));
                     InputResult::Scroll
                 }
-            },
+            }
             WM_MOUSEHWHEEL => {
                 let delta = (wparam >> 16) as i16 as f32 * 10. / WHEEL_DELTA as f32;
 
                 if wparam & MK_CONTROL as usize != 0 {
-                    self.events.lock().push(Event::Zoom(
-                        if delta > 0. { 1.5 } else { 0.5 }
-                    ));
+                    self.events
+                        .lock()
+                        .push(Event::Zoom(if delta > 0. { 1.5 } else { 0.5 }));
                     InputResult::Zoom
                 } else {
-                    self.events.lock().push(Event::Scroll(
-                        Vec2::new(delta, 0.)
-                    ));
+                    self.events.lock().push(Event::Scroll(Vec2::new(delta, 0.)));
                     InputResult::Scroll
                 }
-            },
+            }
             msg @ (WM_KEYDOWN | WM_SYSKEYDOWN) => {
                 if let Some(key) = get_key(wparam) {
                     let lock = &mut *self.events.lock();
@@ -188,7 +182,7 @@ impl InputCollector {
                     }
                 }
                 InputResult::Key
-            },
+            }
             msg @ (WM_KEYUP | WM_SYSKEYUP) => {
                 if let Some(key) = get_key(wparam) {
                     self.events.lock().push(Event::Key {
@@ -198,8 +192,8 @@ impl InputCollector {
                     });
                 }
                 InputResult::Key
-            },
-            _ => InputResult::Unknown
+            }
+            _ => InputResult::Unknown,
         }
     }
 
@@ -209,9 +203,10 @@ impl InputCollector {
         RawInput {
             screen_rect: Some(self.get_screen_rect()),
             time: Some(Self::get_system_time()),
-            pixels_per_point: Some(1.),
-            predicted_dt: 1. / 60.,
             modifiers: Modifiers::default(),
+            pixels_per_point: Some(1.),
+            max_texture_side: None,
+            predicted_dt: 1. / 60.,
             hovered_files: vec![],
             dropped_files: vec![],
             events,

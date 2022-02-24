@@ -1,6 +1,6 @@
 #![allow(unused)]
 
-use egui::{Color32, CtxRef, Pos2, Rect, RichText, ScrollArea, Slider, Stroke, Widget};
+use egui::{Color32, Context, Pos2, Rect, RichText, ScrollArea, Slider, Stroke, Widget};
 use egui_d3d11::DirectX11App;
 use faithe::{internal::alloc_console, pattern::Pattern};
 use std::intrinsics::transmute;
@@ -96,7 +96,7 @@ unsafe extern "stdcall" fn hk_wnd_proc(
     CallWindowProcW(OLD_WND_PROC.unwrap(), hwnd, msg, wparam, lparam)
 }
 
-fn ui(ctx: &CtxRef, i: &mut i32) {
+fn ui(ctx: &Context, i: &mut i32) {
     // You should not use statics like this, it made
     // this way for the sake of example.
     static mut UI_CHECK: bool = true;
@@ -157,9 +157,10 @@ fn ui(ctx: &CtxRef, i: &mut i32) {
         }
     });
 
-    egui::Window::new("Debug").show(ctx, |ui| {
-        ui.input().clone().ui(ui);
-    });
+    // egui::Window::new("Debug").show(ctx, |ui| {
+    //     // huh
+    //     ui.input().clone().ui(ui);
+    // });
 
     ctx.debug_painter().rect(
         Rect {

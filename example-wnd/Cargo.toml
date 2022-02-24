@@ -11,11 +11,12 @@ crate-type = ["cdylib"]
 
 [dependencies]
 faithe = "0.3.1"
-egui = "0.16.1"
+egui = "0.17"
 libc = "0.2.112"
 
 [dependencies.egui-d3d11]
 path = "../egui-d3d11"
+features = ["force-compile"]
 
 [dependencies.sunshine]
 git = "https://github.com/sy1ntexx/sunshine"

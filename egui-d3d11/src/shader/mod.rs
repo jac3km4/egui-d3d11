@@ -10,7 +10,6 @@ use windows::Win32::{
     },
 };
 
-
 trait Shader {
     const ENTRY_POINT: PSTR;
     const TARGET: PSTR;
@@ -83,11 +82,11 @@ impl CompiledShaders {
             }
         }
     }
-    
+
     #[cfg(not(feature = "force-compile"))]
     pub fn new(device: &ID3D11Device) -> Self {
         static VERTEX_DATA: &[u8] = include_bytes!("vertex_blob.bin");
-    
+
         let vertex = Self::create_shader::<ID3D11VertexShader>(
             device,
             &ShaderData::EmbeddedData(VERTEX_DATA),
@@ -96,14 +95,14 @@ impl CompiledShaders {
             device,
             &ShaderData::EmbeddedData(include_bytes!("pixel_blob.bin")),
         );
-    
+
         Self {
             vertex,
             pixel,
             bytecode: ShaderData::EmbeddedData(VERTEX_DATA),
         }
     }
-    
+
     #[cfg(feature = "force-compile")]
     pub fn new(device: &ID3D11Device) -> Self {
         let vblob = Self::compile_shader::<ID3D11VertexShader>();
@@ -153,7 +152,7 @@ impl CompiledShaders {
         S: Shader,
     {
         const SHADER_TEXT: &str = include_str!("shader.hlsl");
-        
+
         let mut flags = D3DCOMPILE_ENABLE_STRICTNESS;
         if cfg!(debug_assertions) {
             flags |= D3DCOMPILE_DEBUG;
