@@ -1,7 +1,7 @@
 # egui-d3d11
 D3D11 backend for egui library. Presumably for mods/cheats development.
 Currently few features from egui are missing. WIP.
-## Works on the lastest egui version - `0.17.0`
+## Works with the latest egui version - `0.17.0`
 
 # Implemented features
 - [x] Text rendering
