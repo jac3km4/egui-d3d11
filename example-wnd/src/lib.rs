@@ -152,7 +152,7 @@ fn ui(ctx: &Context, i: &mut i32) {
         }
     });
 
-    egui::Window::new("Debug").show(ctx, |ui| {
+    egui::Window::new("Image").show(ctx, |ui| {
         unsafe {
             // use `once_cell` crate instead of unsafe code!!!
             static mut IMG: Option<TextureId> = None;
