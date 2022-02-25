@@ -153,9 +153,16 @@ fn ui(ctx: &Context, i: &mut i32) {
     });
 
     egui::Window::new("Debug").show(ctx, |ui| {
-        // huh
-        let size = ui.available_size();
-        ui.image(TextureId::Managed(0), Vec2::new(size.x, size.y));
+        unsafe {
+            // use `once_cell` crate instead of unsafe code!!!
+            static mut IMG: Option<TextureId> = None;
+            if IMG.is_none() {
+                let s = egui_extras::image::load_image_bytes(include_bytes!("../../logo.bmp")).unwrap();
+                IMG = Some(ctx.load_texture("logo", s).id());
+            }
+
+            ui.image(IMG.unwrap(), Vec2::new(512., 512.));
+        }
     });
 
     ctx.debug_painter().rect(
