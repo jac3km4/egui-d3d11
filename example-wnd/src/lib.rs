@@ -1,6 +1,8 @@
 #![allow(unused)]
 
-use egui::{Color32, Context, Pos2, Rect, RichText, ScrollArea, Slider, Stroke, Widget};
+use egui::{
+    Color32, Context, Pos2, Rect, RichText, ScrollArea, Slider, Stroke, TextureId, Vec2, Widget,
+};
 use egui_d3d11::DirectX11App;
 use faithe::{internal::alloc_console, pattern::Pattern};
 use std::intrinsics::transmute;
@@ -157,10 +159,11 @@ fn ui(ctx: &Context, i: &mut i32) {
         }
     });
 
-    // egui::Window::new("Debug").show(ctx, |ui| {
-    //     // huh
-    //     ui.input().clone().ui(ui);
-    // });
+    egui::Window::new("Debug").show(ctx, |ui| {
+        // huh
+        let size = ui.available_size();
+        ui.image(TextureId::Managed(0), Vec2::new(size.x, size.y));
+    });
 
     ctx.debug_painter().rect(
         Rect {

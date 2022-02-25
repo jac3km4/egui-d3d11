@@ -407,7 +407,8 @@ impl<T> DirectX11App<T> {
         }
 
         let meshes = convert_meshes(ctx_lock.tessellate(shapes));
-        self.tex_alloc.resolve_delta(textures_delta, &device);
+        self.tex_alloc
+            .resolve_delta(textures_delta, &device, &context);
 
         self.render_meshes(meshes, &device, &context);
     }
