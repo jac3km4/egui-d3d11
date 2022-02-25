@@ -1,4 +1,4 @@
-use egui::{ImageData, TextureId, TexturesDelta};
+use egui::{Color32, ImageData, TextureId, TexturesDelta};
 use parking_lot::{Mutex, MutexGuard};
 use std::{collections::HashMap, slice::from_raw_parts_mut};
 use windows::Win32::Graphics::{
@@ -27,42 +27,50 @@ impl AllocatedTexture {
         &self.resource
     }
 
-    fn update(
-        &mut self,
-        [x, y]: [usize; 2],
-        delta: ImageData,
-        ctx: &ID3D11DeviceContext,
-    ) {
+    fn update(&mut self, [x, y]: [usize; 2], delta: ImageData, ctx: &ID3D11DeviceContext) {
         unsafe {
             let subr = ctx
                 .Map(&self.texture, 0, D3D11_MAP_WRITE_DISCARD, 0)
                 .unwrap();
 
-            let img = match &self.image {
-                ImageData::Alpha(ai) => ai,
-                _ => todo!(),
-            };
+            match (&self.image, delta) {
+                (ImageData::Color(img), ImageData::Color(new)) => {
+                    let data = from_raw_parts_mut(
+                        subr.pData as *mut Color32,
+                        subr.RowPitch as usize * self.image.height(),
+                    );
+                    data.as_mut_ptr().copy_from_nonoverlapping(
+                        img.pixels.as_ptr(),
+                        subr.RowPitch as usize * self.image.height(),
+                    );
 
-            let new = match delta {
-                ImageData::Alpha(ai) => ai,
-                _ => todo!(),
-            };
-
-            let data = from_raw_parts_mut(
-                subr.pData as *mut u8,
-                subr.RowPitch as usize * self.image.height(),
-            );
-            data.as_mut_ptr().copy_from_nonoverlapping(
-                img.pixels.as_ptr(),
-                subr.RowPitch as usize * self.image.height(),
-            );
-
-            let mut i = 0;
-            for y in y..(y + new.height()) {
-                for x in x..(x + new.width()) {
-                    data[y * img.width() + x] = new.pixels[i];
-                    i += 1;
+                    let mut i = 0;
+                    for y in y..(y + new.height()) {
+                        for x in x..(x + new.width()) {
+                            data[y * img.width() + x] = new.pixels[i];
+                            i += 1;
+                        }
+                    }
                 }
+                (ImageData::Alpha(img), ImageData::Alpha(new)) => {
+                    let data = from_raw_parts_mut(
+                        subr.pData as *mut u8,
+                        subr.RowPitch as usize * self.image.height(),
+                    );
+                    data.as_mut_ptr().copy_from_nonoverlapping(
+                        img.pixels.as_ptr(),
+                        subr.RowPitch as usize * self.image.height(),
+                    );
+
+                    let mut i = 0;
+                    for y in y..(y + new.height()) {
+                        for x in x..(x + new.width()) {
+                            data[y * img.width() + x] = new.pixels[i];
+                            i += 1;
+                        }
+                    }
+                }
+                _ => unreachable!(),
             }
 
             ctx.Unmap(&self.texture, 0);

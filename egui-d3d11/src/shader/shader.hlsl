@@ -27,11 +27,15 @@ sampler sampler0;
 Texture2D texture0;
 
 float4 ps_main(vs_out input) : SV_TARGET {
-  float3 albedo = pow(
-    input.color.xyz,
-    (1.0 / 2.2).xxx
-  );
-  float alpha = input.color.w * texture0.Sample(sampler0, input.uv).x;
+  if (input.mode == 0) {
+    float3 albedo = pow(
+      input.color.xyz,
+      (1.0 / 2.2).xxx
+    );
+    float alpha = input.color.w * texture0.Sample(sampler0, input.uv).x;
 
-  return float4(albedo, alpha);
+    return float4(albedo, alpha);
+  } else {
+    return input.color * texture0.Sample(sampler0, input.uv);
+  }
 }

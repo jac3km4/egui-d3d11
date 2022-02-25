@@ -16,7 +16,7 @@ libc = "0.2.112"
 
 [dependencies.egui-d3d11]
 path = "../egui-d3d11"
-features = ["force-compile"]
+features = ["force-compile", "save-blob"]
 
 [dependencies.sunshine]
 git = "https://github.com/sy1ntexx/sunshine"

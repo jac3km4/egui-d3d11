@@ -1,6 +1,7 @@
 # egui-d3d11
 D3D11 backend for egui library. Presumably for mods/cheats development.
 Currently few features from egui are missing. WIP.
+## Works on the lastest egui version - `0.17.0`
 
 # Implemented features
 - [x] Text rendering
@@ -10,7 +11,7 @@ Currently few features from egui are missing. WIP.
 - [x] Scroll support
 - [x] Scissor rects clipping
 - [x] State storage
-- [ ] Other image textures
+- [x] Other image textures
 - [ ] Different cursor icons
 - [ ] Drag & Drop support
 

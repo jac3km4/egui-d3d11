@@ -1,5 +1,3 @@
-#![allow(unused)]
-
 use egui::{
     Color32, Context, Pos2, Rect, RichText, ScrollArea, Slider, Stroke, TextureId, Vec2, Widget,
 };
@@ -10,10 +8,7 @@ use windows::{
     core::HRESULT,
     Win32::{
         Foundation::{HWND, LPARAM, LRESULT, WPARAM},
-        Graphics::{
-            Direct3D11::ID3D11Device,
-            Dxgi::{Common::DXGI_FORMAT, IDXGISwapChain},
-        },
+        Graphics::Dxgi::{Common::DXGI_FORMAT, IDXGISwapChain},
         UI::WindowsAndMessaging::{CallWindowProcW, SetWindowLongPtrA, GWLP_WNDPROC, WNDPROC},
     },
 };
@@ -42,8 +37,6 @@ unsafe extern "stdcall" fn hk_present(
     sync_interval: u32,
     flags: u32,
 ) -> HRESULT {
-    let device: ID3D11Device = swap_chain.GetDevice().unwrap();
-
     if APP.is_none() {
         APP = Some(DirectX11App::new_with_default(ui, &swap_chain));
 
@@ -184,7 +177,7 @@ fn ui(ctx: &Context, i: &mut i32) {
 }
 
 unsafe fn main_thread(_hinst: usize) {
-    alloc_console();
+    alloc_console().unwrap();
 
     eprintln!("Hello World!");
 
