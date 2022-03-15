@@ -323,6 +323,11 @@ impl<T> DirectX11App<T> {
         self.state.lock()
     }
 
+    /// Returns lock to context of the app.
+    pub fn context(&self) -> MutexGuard<Context> {
+        self.ctx.lock()
+    }
+
     /// Creates new app with state initialized from closule call.
     #[inline]
     pub fn new_with(
